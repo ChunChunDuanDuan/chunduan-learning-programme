@@ -85,7 +85,9 @@ export function LoginForm() {
             onChange={(event) => setEmail(event.target.value)}
             className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-950"
             placeholder="Email"
-            autoComplete="email"
+            autoComplete="new-password"
+            name="private-login-email-field"
+            id="private-login-email-field"
           />
         </div>
 
@@ -100,7 +102,9 @@ export function LoginForm() {
             onChange={(event) => setPassword(event.target.value)}
             className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-950"
             placeholder="Password"
-            autoComplete="current-password"
+            autoComplete="new-password"
+            name="private-login-password-field"
+            id="private-login-password-field"
           />
         </div>
 
