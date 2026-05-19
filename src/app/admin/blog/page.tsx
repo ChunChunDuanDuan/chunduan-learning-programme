@@ -153,7 +153,7 @@ export default function BlogAdminPage() {
 
                         <Link
                             href="/admin/blog/new"
-                            className="inline-flex rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-neutral-700"
+                            className="inline-flex rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium !text-white transition hover:bg-neutral-700"
                         >
                             New post
                         </Link>
@@ -199,7 +199,7 @@ export default function BlogAdminPage() {
 
                         <Link
                             href="/admin/blog/new"
-                            className="mt-5 inline-flex rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-neutral-700"
+                            className="mt-5 inline-flex rounded-xl bg-neutral-950 px-5 py-3 text-sm font-medium !text-white transition hover:bg-neutral-700"
                         >
                             Create first post
                         </Link>
@@ -220,8 +220,8 @@ export default function BlogAdminPage() {
 
                                             <span
                                                 className={`rounded-full px-3 py-1 text-xs font-medium ${post.is_public
-                                                        ? "bg-green-50 text-green-700"
-                                                        : "bg-neutral-100 text-neutral-600"
+                                                    ? "bg-green-50 text-green-700"
+                                                    : "bg-neutral-100 text-neutral-600"
                                                     }`}
                                             >
                                                 {post.is_public ? "Public" : "Draft"}
