@@ -1,106 +1,185 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "../../lib/supabase/client";
 
-const sections = [
-  {
-    title: "Main",
-    items: [
-      {
-        label: "Dashboard",
-        href: "/",
-      },
-      {
-        label: "Review",
-        href: "/review",
-      },
-    ],
-  },
-  {
-    title: "Journal",
-    items: [
-      {
-        label: "Daily Log",
-        href: "/daily-log",
-      },
-    ],
-  },
-  {
-    title: "Language Learning",
-    items: [
-      {
-        label: "Vocabulary",
-        href: "/vocabulary",
-      },
-      {
-        label: "Sentence Practice",
-        href: "/sentences",
-      },
-      {
-        label: "Articles",
-        href: "/articles",
-      },
-      {
-        label: "English",
-        href: "/languages/en",
-      },
-      {
-        label: "Deutsch",
-        href: "/languages/de",
-      },
-      {
-        label: "Русский",
-        href: "/languages/ru",
-      },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      {
-        label: "Settings",
-        href: "/settings",
-      },
-      {
-        label: "Login",
-        href: "/login",
-      },
-    ],
-  },
-];
+type AuthStatus = "loading" | "signed-in" | "signed-out";
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  variant?: "desktop" | "mobile";
+  onNavigate?: () => void;
+};
+
+export function AppSidebar({
+  variant = "desktop",
+  onNavigate,
+}: AppSidebarProps) {
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data } = await supabase.auth.getUser();
+
+      if (data.user) {
+        setAuthStatus("signed-in");
+      } else {
+        setAuthStatus("signed-out");
+      }
+    }
+
+    checkAuth();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event: string, session: Session | null) => {
+        if (session?.user) {
+          setAuthStatus("signed-in");
+        } else {
+          setAuthStatus("signed-out");
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+
+    setAuthStatus("signed-out");
+
+    if (onNavigate) {
+      onNavigate();
+    }
+
+    window.location.href = "/login";
+  }
+
+  const isSignedIn = authStatus === "signed-in";
+
+  const asideClassName =
+    variant === "desktop"
+      ? "fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-neutral-200 bg-white px-8 py-8 text-neutral-950 lg:flex lg:flex-col"
+      : "h-full w-72 overflow-y-auto bg-white px-8 py-8 text-neutral-950";
+
+  function NavLink({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <Link href={href} onClick={onNavigate} className="hover:text-neutral-500">
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <aside className="min-h-screen w-64 border-r border-neutral-200 bg-neutral-50 px-4 py-6">
-      <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-          Learning Programme
-        </p>
+    <aside className={asideClassName}>
+      <Link
+        href="/"
+        onClick={onNavigate}
+        className="text-xl font-semibold tracking-tight"
+      >
+        ChunDuan&apos;s
+      </Link>
 
-        <h1 className="mt-2 text-lg font-semibold text-neutral-950">
-          ChunDuan&apos;s
-        </h1>
-      </div>
+      <nav className="mt-10 flex flex-1 flex-col gap-8">
+        <section>
+          <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+            Public
+          </p>
 
-      <nav className="space-y-6">
-        {sections.map((section) => (
-          <div key={section.title}>
-            <p className="mb-2 px-3 text-xs uppercase tracking-[0.18em] text-neutral-400">
-              {section.title}
-            </p>
-
-            <div className="space-y-1">
-              {section.items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block rounded-xl px-3 py-2 text-sm text-neutral-700 transition hover:bg-white hover:text-neutral-950 hover:shadow-sm"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+          <div className="flex flex-col gap-4 text-sm">
+            <NavLink href="/">Home</NavLink>
+            <NavLink href="/blog">Blog</NavLink>
           </div>
-        ))}
+        </section>
+
+        {isSignedIn ? (
+          <>
+            <section>
+              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+                Main
+              </p>
+
+              <div className="flex flex-col gap-4 text-sm">
+                <NavLink href="/dashboard">Dashboard</NavLink>
+                <NavLink href="/review">Review</NavLink>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+                Journal
+              </p>
+
+              <div className="flex flex-col gap-4 text-sm">
+                <NavLink href="/daily-log">Daily Log</NavLink>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+                Language Learning
+              </p>
+
+              <div className="flex flex-col gap-4 text-sm">
+                <NavLink href="/vocabulary">Vocabulary</NavLink>
+                <NavLink href="/sentences">Sentence Practice</NavLink>
+                <NavLink href="/articles">Articles</NavLink>
+                <NavLink href="/english">English</NavLink>
+                <NavLink href="/deutsch">Deutsch</NavLink>
+                <NavLink href="/russian">Русский</NavLink>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+                Blog Admin
+              </p>
+
+              <div className="flex flex-col gap-4 text-sm">
+                <NavLink href="/admin/blog">Manage Blog</NavLink>
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        <section>
+          <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-400">
+            System
+          </p>
+
+          <div className="flex flex-col gap-4 text-sm">
+            {isSignedIn ? (
+              <>
+                <NavLink href="/settings">Settings</NavLink>
+                <NavLink href="/login">Account</NavLink>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="text-left text-sm text-neutral-950 hover:text-neutral-500"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <NavLink href="/login">Login</NavLink>
+            )}
+          </div>
+        </section>
       </nav>
+
+      <div className="mt-8 flex h-11 w-11 items-center justify-center rounded-full bg-neutral-950 text-sm font-medium !text-white">
+        N
+      </div>
     </aside>
   );
 }
