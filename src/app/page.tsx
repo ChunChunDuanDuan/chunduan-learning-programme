@@ -29,7 +29,7 @@ export default function HomePage() {
         <section className="flex flex-1 items-center py-20">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">
-              Personal Learning Website
+              Personal Website
             </p>
 
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl xl:text-6xl">
@@ -37,16 +37,13 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-base leading-8 text-neutral-600">
-              A personal learning space for language study, daily reflection,
-              philosophy, science, and long-form notes. The private learning
-              system is available after login, while the public Blog collects
-              selected writings and reflections.
+              My learning space for philosophy, language study, and long-form notes. Here, you can read my blogs where I record my life.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/blog"
-                className="inline-flex rounded-xl bg-neutral-950 px-6 py-3 text-sm font-medium text-white transition hover:bg-neutral-700"
+                className="inline-flex rounded-xl bg-neutral-950 px-6 py-3 text-sm font-medium !text-white transition hover:bg-neutral-700"
               >
                 Read Blog
               </Link>
@@ -68,7 +65,7 @@ export default function HomePage() {
             </p>
             <h2 className="mt-3 text-lg font-semibold">Blog</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Public essays, notes, and reflections available without login.
+              My public essays, notes, and reflections available.
             </p>
           </div>
 
@@ -78,7 +75,7 @@ export default function HomePage() {
             </p>
             <h2 className="mt-3 text-lg font-semibold">Language Learning</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              English, Deutsch, and Русский learning modules for personal study.
+              English, Deutsch, and Русский learning modules for my study.
             </p>
           </div>
 
@@ -88,7 +85,7 @@ export default function HomePage() {
             </p>
             <h2 className="mt-3 text-lg font-semibold">Daily Logs</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Structured daily records for learning progress and reflection.
+              My daily records for learning progress and reflection.
             </p>
           </div>
         </section>
