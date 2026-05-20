@@ -35,6 +35,216 @@ function extractJson(text: string): SentenceAIResult {
     }
 }
 
+function hasCyrillic(text: string) {
+    return /[\u0400-\u04FF]/.test(text);
+}
+
+function hasLatin(text: string) {
+    return /[A-Za-z]/.test(text);
+}
+
+function cleanExplanation(explanation: string) {
+    return explanation
+        .replace(/^English:\s*/gim, "")
+        .replace(/^Deutsch:\s*/gim, "")
+        .replace(/^German:\s*/gim, "")
+        .replace(/^Русский:\s*/gim, "")
+        .replace(/^Russian:\s*/gim, "")
+        .replace(/^英文:\s*/gim, "")
+        .replace(/^德文:\s*/gim, "")
+        .replace(/^俄文:\s*/gim, "")
+        .trim();
+}
+
+function normaliseLanguage(language: string) {
+    const value = language.trim().toLowerCase();
+
+    if (
+        value === "deutsch" ||
+        value === "german" ||
+        value === "de"
+    ) {
+        return "Deutsch";
+    }
+
+    if (
+        value === "русский" ||
+        value === "russian" ||
+        value === "ru"
+    ) {
+        return "Русский";
+    }
+
+    return "English";
+}
+
+function buildPrompt({
+    language,
+    sourceZh,
+    existingTargetSentence,
+    existingTranslationZh,
+}: {
+    language: string;
+    sourceZh: string;
+    existingTargetSentence: string;
+    existingTranslationZh: string;
+}) {
+    const sharedJsonRule = `
+Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not add any text outside JSON.
+
+JSON shape:
+{
+  "target_sentence": "string",
+  "translation_zh": "string",
+  "explanation": "string",
+  "notes": "string"
+}
+`;
+
+    const dailyLifeRule = `
+The sentence must be common in everyday life.
+Prefer daily conversation, study, work, shopping, eating, going out, asking for help, making plans, feelings, simple opinions, and common social situations.
+Avoid abstract slogans, philosophical sayings, moral maxims, political claims, academic statements, and literary aphorisms.
+It should sound like something people actually say in daily conversation.
+Keep it short and practical.
+`;
+
+    if (language === "Русский") {
+        return `
+${sharedJsonRule}
+
+You are generating a Russian sentence for a beginner learner.
+
+Selected language: Russian / Русский.
+
+Chinese prompt:
+${sourceZh}
+
+Existing Russian sentence, if any:
+${existingTargetSentence}
+
+Existing Chinese translation, if any:
+${existingTranslationZh}
+
+Task:
+Generate a natural Russian sentence in Cyrillic script from the Chinese prompt.
+
+Absolute rules:
+- target_sentence MUST be Russian.
+- target_sentence MUST use Cyrillic script.
+- target_sentence MUST NOT be English.
+- Do not put any English sentence in target_sentence.
+- translation_zh must be Traditional Chinese.
+- explanation must explain the RUSSIAN target_sentence word by word in Traditional Chinese.
+- explanation must NOT explain the Chinese prompt.
+- explanation must NOT contain labels like "Русский:" or "Russian:".
+- notes must be an empty string: ""
+- Do not generate notes.
+- The notes field is reserved for the user's own personal notes.
+
+${dailyLifeRule}
+
+Explanation format:
+Russian word: Traditional Chinese meaning
+Russian word: Traditional Chinese meaning
+
+Example:
+{
+  "target_sentence": "Я хочу купить кофе.",
+  "translation_zh": "我想買咖啡。",
+  "explanation": "Я: 我\\nхочу: 想要\\nкупить: 買\\nкофе: 咖啡",
+  "notes": ""
+}
+`;
+    }
+
+    if (language === "Deutsch") {
+        return `
+${sharedJsonRule}
+
+You are generating a German sentence for an A1 learner.
+
+Selected language: German / Deutsch.
+
+Chinese prompt:
+${sourceZh}
+
+Existing German sentence, if any:
+${existingTargetSentence}
+
+Existing Chinese translation, if any:
+${existingTranslationZh}
+
+Task:
+Generate a natural German sentence from the Chinese prompt.
+
+Absolute rules:
+- target_sentence MUST be German.
+- target_sentence MUST NOT be English.
+- translation_zh must be Traditional Chinese.
+- explanation must explain the GERMAN target_sentence word by word in English.
+- explanation must NOT explain the Chinese prompt.
+- explanation must NOT contain labels like "Deutsch:" or "German:".
+- notes must be Traditional Chinese.
+- notes should explain grammar, usage, sentence structure, and naturalness.
+
+${dailyLifeRule}
+
+Explanation format:
+German word: English meaning
+German word: English meaning
+
+Example:
+{
+  "target_sentence": "Ich möchte Kaffee kaufen.",
+  "translation_zh": "我想買咖啡。",
+  "explanation": "Ich: I\\nmöchte: would like\\nKaffee: coffee\\nkaufen: buy",
+  "notes": "這是一句很常見的日常句子。möchte 比 will 更禮貌，適合初學者先記起來。"
+}
+`;
+    }
+
+    return `
+${sharedJsonRule}
+
+You are generating an English sentence for a language learner.
+
+Selected language: English.
+
+Chinese prompt:
+${sourceZh}
+
+Existing English sentence, if any:
+${existingTargetSentence}
+
+Existing Chinese translation, if any:
+${existingTranslationZh}
+
+Task:
+Generate a natural English sentence from the Chinese prompt.
+
+Absolute rules:
+- target_sentence MUST be English.
+- translation_zh must be Traditional Chinese.
+- explanation must be an empty string: "".
+- notes must be Traditional Chinese.
+- notes should explain usage, nuance, sentence structure, and naturalness.
+
+${dailyLifeRule}
+
+Example:
+{
+  "target_sentence": "I want to buy some coffee.",
+  "translation_zh": "我想買一些咖啡。",
+  "explanation": "",
+  "notes": "這是一句很自然的日常英文。some coffee 比 a coffee 更泛用，表示想買一些咖啡。"
+}
+`;
+}
+
 export async function GET() {
     const apiKey = getApiKey();
 
@@ -42,7 +252,7 @@ export async function GET() {
         ok: true,
         source: ".env.local",
         route: "explain-sentence",
-        mode: "generate target sentence from Chinese prompt",
+        mode: "daily-life sentence generation",
         hasOpenAIKey: Boolean(apiKey),
         keyLength: apiKey?.length ?? 0,
         keyStart: apiKey ? apiKey.slice(0, 12) : null,
@@ -63,7 +273,7 @@ export async function POST(request: Request) {
 
         const body = (await request.json()) as ExplainSentenceRequest;
 
-        const language = body.language || "English";
+        const language = normaliseLanguage(body.language || "English");
         const sourceZh = body.source_zh || "";
         const existingTargetSentence = body.target_sentence || "";
         const existingTranslationZh = body.translation_zh || "";
@@ -88,41 +298,16 @@ export async function POST(request: Request) {
                 {
                     role: "system",
                     content:
-                        "You generate and explain language-learning sentences. Return only valid JSON. Do not use markdown or code fences.",
+                        "You are a strict language-learning sentence generator. You must follow the selected language exactly.",
                 },
                 {
                     role: "user",
-                    content: `
-Return ONLY this JSON shape:
-{
-  "target_sentence": "string",
-  "translation_zh": "string",
-  "explanation": "string",
-  "notes": "string"
-}
-
-Target language: ${language}
-Chinese meaning / prompt: ${sourceZh}
-Existing target sentence, if any: ${existingTargetSentence}
-Existing Chinese translation, if any: ${existingTranslationZh}
-
-Task:
-- If there is a Chinese prompt, generate a natural sentence in the target language.
-- If there is already an existing target sentence, you may improve it naturally while preserving the meaning.
-- Then provide Traditional Chinese translation, explanation, and learning notes.
-
-Rules:
-- target_sentence must be in the selected target language.
-- translation_zh must be Traditional Chinese.
-- If language is Deutsch, explanation must be in English.
-- If language is English or Русский, explanation must be in Traditional Chinese.
-- notes must be in Traditional Chinese.
-- Explain grammar, sentence structure, vocabulary, and natural usage.
-- For English, provide a natural C1-level sentence unless the Chinese prompt is simple.
-- For Deutsch, keep the sentence suitable for A1 learners.
-- For Русский, keep the sentence suitable for beginners.
-- Keep the result useful for language learning.
-`,
+                    content: buildPrompt({
+                        language,
+                        sourceZh,
+                        existingTargetSentence,
+                        existingTranslationZh,
+                    }),
                 },
             ],
         });
@@ -136,7 +321,15 @@ Rules:
             );
         }
 
-        const result = extractJson(outputText);
+        const rawResult = extractJson(outputText);
+
+        const result: SentenceAIResult = {
+            target_sentence: rawResult.target_sentence.trim(),
+            translation_zh: rawResult.translation_zh.trim(),
+            explanation:
+                language === "English" ? "" : cleanExplanation(rawResult.explanation),
+            notes: "",
+        };
 
         if (
             typeof result.target_sentence !== "string" ||
@@ -151,6 +344,32 @@ Rules:
                 },
                 { status: 500 }
             );
+        }
+
+        if (language === "Русский") {
+            if (!hasCyrillic(result.target_sentence) || hasLatin(result.target_sentence)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "The AI returned a non-Russian target sentence. Please try again.",
+                        raw: result,
+                    },
+                    { status: 500 }
+                );
+            }
+        }
+
+        if (language === "Deutsch") {
+            if (hasCyrillic(result.target_sentence)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "The AI returned a non-German target sentence. Please try again.",
+                        raw: result,
+                    },
+                    { status: 500 }
+                );
+            }
         }
 
         return NextResponse.json(result);

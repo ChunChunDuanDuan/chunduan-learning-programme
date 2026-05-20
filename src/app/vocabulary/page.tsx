@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase/client";
 
+type VocabularyDirection = "zh-to-target" | "target-to-zh";
+
 type VocabularyItem = {
   id: string;
   user_id: string;
   language: string;
+  direction: VocabularyDirection | null;
   prompt_zh: string | null;
   word: string;
   meaning_zh: string | null;
@@ -30,10 +33,18 @@ type VocabularyAIResult = {
 
 const languages = ["English", "Deutsch", "Русский"];
 
+function getDirectionLabel(direction: VocabularyDirection) {
+  if (direction === "zh-to-target") return "Chinese → target language";
+  return "Target language → Chinese";
+}
+
 export default function VocabularyPage() {
   const [items, setItems] = useState<VocabularyItem[]>([]);
 
   const [language, setLanguage] = useState("English");
+  const [direction, setDirection] =
+    useState<VocabularyDirection>("zh-to-target");
+
   const [promptZh, setPromptZh] = useState("");
   const [word, setWord] = useState("");
   const [meaningZh, setMeaningZh] = useState("");
@@ -53,6 +64,8 @@ export default function VocabularyPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLanguage, setEditLanguage] = useState("English");
+  const [editDirection, setEditDirection] =
+    useState<VocabularyDirection>("zh-to-target");
   const [editPromptZh, setEditPromptZh] = useState("");
   const [editWord, setEditWord] = useState("");
   const [editMeaningZh, setEditMeaningZh] = useState("");
@@ -98,15 +111,20 @@ export default function VocabularyPage() {
         code: error.code,
       });
     } else {
-      setItems(data ?? []);
+      setItems((data ?? []) as VocabularyItem[]);
     }
 
     setLoading(false);
   }
 
   async function generateVocabularyExplanation() {
-    if (!promptZh.trim()) {
+    if (direction === "zh-to-target" && !promptZh.trim()) {
       alert("Please enter a Chinese prompt first.");
+      return;
+    }
+
+    if (direction === "target-to-zh" && !word.trim()) {
+      alert("Please enter a word or phrase first.");
       return;
     }
 
@@ -120,6 +138,7 @@ export default function VocabularyPage() {
         },
         body: JSON.stringify({
           language,
+          direction,
           prompt_zh: promptZh,
           word,
         }),
@@ -153,6 +172,8 @@ export default function VocabularyPage() {
   async function explainSavedItem(item: VocabularyItem) {
     setExplainingId(item.id);
 
+    const itemDirection = item.direction ?? "zh-to-target";
+
     try {
       const response = await fetch("/api/explain-vocabulary", {
         method: "POST",
@@ -161,6 +182,7 @@ export default function VocabularyPage() {
         },
         body: JSON.stringify({
           language: item.language,
+          direction: itemDirection,
           prompt_zh: item.prompt_zh ?? "",
           word: item.word,
         }),
@@ -179,6 +201,7 @@ export default function VocabularyPage() {
       const { error } = await supabase
         .from("vocabulary")
         .update({
+          direction: itemDirection,
           word: result.word.trim(),
           meaning_zh: result.meaning_zh.trim(),
           part_of_speech: result.part_of_speech.trim(),
@@ -207,6 +230,7 @@ export default function VocabularyPage() {
           currentItem.id === item.id
             ? {
               ...currentItem,
+              direction: itemDirection,
               word: result.word.trim(),
               meaning_zh: result.meaning_zh.trim(),
               part_of_speech: result.part_of_speech.trim(),
@@ -227,13 +251,22 @@ export default function VocabularyPage() {
   }
 
   async function saveItem() {
-    if (!promptZh.trim()) {
+    if (direction === "zh-to-target" && !promptZh.trim()) {
       alert("Please enter a Chinese prompt.");
       return;
     }
 
     if (!word.trim()) {
-      alert("Please generate or enter a target translation.");
+      alert(
+        direction === "zh-to-target"
+          ? "Please generate or enter a target translation."
+          : "Please enter a target-language word or phrase."
+      );
+      return;
+    }
+
+    if (direction === "target-to-zh" && !meaningZh.trim()) {
+      alert("Please generate or enter a Chinese meaning.");
       return;
     }
 
@@ -260,7 +293,8 @@ export default function VocabularyPage() {
     const { error } = await supabase.from("vocabulary").insert({
       user_id: user.id,
       language,
-      prompt_zh: promptZh.trim(),
+      direction,
+      prompt_zh: direction === "zh-to-target" ? promptZh.trim() : "",
       word: word.trim(),
       meaning_zh: meaningZh.trim(),
       part_of_speech: partOfSpeech.trim(),
@@ -304,10 +338,7 @@ export default function VocabularyPage() {
 
     if (!confirmed) return;
 
-    const { error } = await supabase
-      .from("vocabulary")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("vocabulary").delete().eq("id", id);
 
     if (error) {
       console.error("Delete vocabulary error:", {
@@ -327,6 +358,7 @@ export default function VocabularyPage() {
   function startEdit(item: VocabularyItem) {
     setEditingId(item.id);
     setEditLanguage(item.language);
+    setEditDirection(item.direction ?? "zh-to-target");
     setEditPromptZh(item.prompt_zh ?? "");
     setEditWord(item.word);
     setEditMeaningZh(item.meaning_zh ?? "");
@@ -340,6 +372,7 @@ export default function VocabularyPage() {
   function cancelEdit() {
     setEditingId(null);
     setEditLanguage("English");
+    setEditDirection("zh-to-target");
     setEditPromptZh("");
     setEditWord("");
     setEditMeaningZh("");
@@ -351,13 +384,18 @@ export default function VocabularyPage() {
   }
 
   async function updateItem(id: string) {
-    if (!editPromptZh.trim()) {
+    if (editDirection === "zh-to-target" && !editPromptZh.trim()) {
       alert("Please enter a Chinese prompt.");
       return;
     }
 
     if (!editWord.trim()) {
-      alert("Please enter a target translation.");
+      alert("Please enter a word or translation.");
+      return;
+    }
+
+    if (editDirection === "target-to-zh" && !editMeaningZh.trim()) {
+      alert("Please enter a Chinese meaning.");
       return;
     }
 
@@ -365,7 +403,8 @@ export default function VocabularyPage() {
       .from("vocabulary")
       .update({
         language: editLanguage,
-        prompt_zh: editPromptZh.trim(),
+        direction: editDirection,
+        prompt_zh: editDirection === "zh-to-target" ? editPromptZh.trim() : "",
         word: editWord.trim(),
         meaning_zh: editMeaningZh.trim(),
         part_of_speech: editPartOfSpeech.trim(),
@@ -394,7 +433,9 @@ export default function VocabularyPage() {
           ? {
             ...item,
             language: editLanguage,
-            prompt_zh: editPromptZh.trim(),
+            direction: editDirection,
+            prompt_zh:
+              editDirection === "zh-to-target" ? editPromptZh.trim() : "",
             word: editWord.trim(),
             meaning_zh: editMeaningZh.trim(),
             part_of_speech: editPartOfSpeech.trim(),
@@ -421,7 +462,8 @@ export default function VocabularyPage() {
       item.example_sentence?.toLowerCase().includes(keyword) ||
       item.example_translation_zh?.toLowerCase().includes(keyword) ||
       item.usage_notes?.toLowerCase().includes(keyword) ||
-      item.notes?.toLowerCase().includes(keyword);
+      item.notes?.toLowerCase().includes(keyword) ||
+      item.direction?.toLowerCase().includes(keyword);
 
     const matchesLanguage =
       languageFilter === "All" || item.language === languageFilter;
@@ -446,8 +488,8 @@ export default function VocabularyPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
-            Enter Chinese prompts and generate target-language vocabulary with
-            contextual nuance.
+            Generate vocabulary in both directions: Chinese to target language,
+            or target-language words back into Chinese.
           </p>
         </header>
 
@@ -473,6 +515,27 @@ export default function VocabularyPage() {
             <div className="mt-6 grid gap-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-neutral-700">
+                  Direction
+                </label>
+
+                <select
+                  value={direction}
+                  onChange={(event) =>
+                    setDirection(event.target.value as VocabularyDirection)
+                  }
+                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                >
+                  <option value="zh-to-target">
+                    Chinese → target language
+                  </option>
+                  <option value="target-to-zh">
+                    Target language → Chinese
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-neutral-700">
                   Language
                 </label>
 
@@ -489,15 +552,37 @@ export default function VocabularyPage() {
                 </select>
               </div>
 
+              {direction === "zh-to-target" && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    Chinese prompt
+                  </label>
+
+                  <textarea
+                    value={promptZh}
+                    onChange={(event) => setPromptZh(event.target.value)}
+                    placeholder="例如：規定性[黑格爾哲學]"
+                    rows={3}
+                    className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Chinese prompt
+                  {direction === "zh-to-target"
+                    ? "Target translation candidates"
+                    : "Original word or phrase"}
                 </label>
 
                 <textarea
-                  value={promptZh}
-                  onChange={(event) => setPromptZh(event.target.value)}
-                  placeholder="例如：規定性[黑格爾哲學]"
+                  value={word}
+                  onChange={(event) => setWord(event.target.value)}
+                  placeholder={
+                    direction === "zh-to-target"
+                      ? "AI will generate possible translations here."
+                      : "Enter an English, German, or Russian word/phrase here."
+                  }
                   rows={3}
                   className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
                 />
@@ -508,22 +593,12 @@ export default function VocabularyPage() {
                 disabled={generating || saving}
                 className="rounded-2xl border border-neutral-300 bg-neutral-50 px-5 py-3 text-sm font-medium text-neutral-800 hover:bg-neutral-100 disabled:opacity-50"
               >
-                {generating ? "Generating..." : "Generate vocabulary with AI"}
+                {generating
+                  ? "Generating..."
+                  : direction === "zh-to-target"
+                    ? "Generate target vocabulary with AI"
+                    : "Translate into Chinese with AI"}
               </button>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-700">
-                  Target translation candidates
-                </label>
-
-                <textarea
-                  value={word}
-                  onChange={(event) => setWord(event.target.value)}
-                  placeholder="AI will generate possible translations here."
-                  rows={3}
-                  className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                />
-              </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-neutral-700">
@@ -604,7 +679,7 @@ export default function VocabularyPage() {
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Subtle differences between candidate translations..."
+                  placeholder="Subtle differences between candidate translations or meanings..."
                   rows={4}
                   className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
                 />
@@ -674,243 +749,278 @@ export default function VocabularyPage() {
           )}
 
           <div className="mt-5 grid gap-4">
-            {filteredItems.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
-              >
-                <div className="mb-4 flex items-start justify-between gap-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-                      {item.language}
-                    </span>
+            {filteredItems.map((item) => {
+              const itemDirection = item.direction ?? "zh-to-target";
 
-                    {item.part_of_speech && (
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-                        {item.part_of_speech}
+                        {item.language}
                       </span>
-                    )}
 
-                    <span className="text-xs text-neutral-400">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </span>
+                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                        {getDirectionLabel(itemDirection)}
+                      </span>
+
+                      {item.part_of_speech && (
+                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                          {item.part_of_speech}
+                        </span>
+                      )}
+
+                      <span className="text-xs text-neutral-400">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {editingId !== item.id && (
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          onClick={() => explainSavedItem(item)}
+                          disabled={explainingId === item.id}
+                          className="rounded-xl border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                        >
+                          {explainingId === item.id
+                            ? "Explaining..."
+                            : "AI Explain"}
+                        </button>
+
+                        <button
+                          onClick={() => startEdit(item)}
+                          className="rounded-xl border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => deleteItem(item.id)}
+                          className="rounded-xl border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {editingId !== item.id && (
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button
-                        onClick={() => explainSavedItem(item)}
-                        disabled={explainingId === item.id}
-                        className="rounded-xl border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                  {editingId === item.id ? (
+                    <div className="mt-5 grid gap-4">
+                      <select
+                        value={editDirection}
+                        onChange={(event) =>
+                          setEditDirection(
+                            event.target.value as VocabularyDirection
+                          )
+                        }
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
                       >
-                        {explainingId === item.id
-                          ? "Explaining..."
-                          : "AI Explain"}
-                      </button>
+                        <option value="zh-to-target">
+                          Chinese → target language
+                        </option>
+                        <option value="target-to-zh">
+                          Target language → Chinese
+                        </option>
+                      </select>
 
-                      <button
-                        onClick={() => startEdit(item)}
-                        className="rounded-xl border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                      <select
+                        value={editLanguage}
+                        onChange={(event) =>
+                          setEditLanguage(event.target.value)
+                        }
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
                       >
-                        Edit
-                      </button>
+                        {languages.map((lang) => (
+                          <option key={lang} value={lang}>
+                            {lang}
+                          </option>
+                        ))}
+                      </select>
 
-                      <button
-                        onClick={() => deleteItem(item.id)}
-                        className="rounded-xl border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
+                      {editDirection === "zh-to-target" && (
+                        <textarea
+                          value={editPromptZh}
+                          onChange={(event) =>
+                            setEditPromptZh(event.target.value)
+                          }
+                          placeholder="Chinese prompt"
+                          rows={3}
+                          className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                        />
+                      )}
+
+                      <textarea
+                        value={editWord}
+                        onChange={(event) => setEditWord(event.target.value)}
+                        placeholder={
+                          editDirection === "zh-to-target"
+                            ? "Target translation candidates"
+                            : "Original word or phrase"
+                        }
+                        rows={3}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <textarea
+                        value={editMeaningZh}
+                        onChange={(event) =>
+                          setEditMeaningZh(event.target.value)
+                        }
+                        placeholder="Chinese meaning"
+                        rows={3}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <input
+                        value={editPartOfSpeech}
+                        onChange={(event) =>
+                          setEditPartOfSpeech(event.target.value)
+                        }
+                        placeholder="Part of speech"
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <textarea
+                        value={editExampleSentence}
+                        onChange={(event) =>
+                          setEditExampleSentence(event.target.value)
+                        }
+                        placeholder="Example sentence"
+                        rows={3}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <textarea
+                        value={editExampleTranslationZh}
+                        onChange={(event) =>
+                          setEditExampleTranslationZh(event.target.value)
+                        }
+                        placeholder="Example translation"
+                        rows={3}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <textarea
+                        value={editUsageNotes}
+                        onChange={(event) =>
+                          setEditUsageNotes(event.target.value)
+                        }
+                        placeholder="Usage notes"
+                        rows={4}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <textarea
+                        value={editNotes}
+                        onChange={(event) => setEditNotes(event.target.value)}
+                        placeholder="Nuance comparison"
+                        rows={4}
+                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                      />
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => updateItem(item.id)}
+                          className="rounded-xl bg-neutral-950 px-4 py-2 text-xs font-medium text-white"
+                        >
+                          Save changes
+                        </button>
+
+                        <button
+                          onClick={cancelEdit}
+                          className="rounded-xl border border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 grid gap-4">
+                      {itemDirection === "zh-to-target" && item.prompt_zh && (
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                            Chinese prompt
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
+                            {item.prompt_zh}
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                          {itemDirection === "zh-to-target"
+                            ? "Target translation candidates"
+                            : "Original word or phrase"}
+                        </p>
+
+                        <h3 className="mt-2 whitespace-pre-wrap text-2xl font-semibold leading-8 text-neutral-950">
+                          {item.word}
+                        </h3>
+                      </div>
+
+                      {item.meaning_zh && (
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                            Chinese meaning
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                            {item.meaning_zh}
+                          </p>
+                        </div>
+                      )}
+
+                      {item.example_sentence && (
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                            Example sentence
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                            {item.example_sentence}
+                          </p>
+
+                          {item.example_translation_zh && (
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
+                              {item.example_translation_zh}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {item.usage_notes && (
+                        <div className="rounded-2xl bg-neutral-50 px-4 py-3">
+                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                            Usage notes
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                            {item.usage_notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {item.notes && (
+                        <div className="rounded-2xl bg-neutral-50 px-4 py-3">
+                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                            Nuance comparison
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                            {item.notes}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-
-                {editingId === item.id ? (
-                  <div className="mt-5 grid gap-4">
-                    <select
-                      value={editLanguage}
-                      onChange={(event) =>
-                        setEditLanguage(event.target.value)
-                      }
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    >
-                      {languages.map((lang) => (
-                        <option key={lang} value={lang}>
-                          {lang}
-                        </option>
-                      ))}
-                    </select>
-
-                    <textarea
-                      value={editPromptZh}
-                      onChange={(event) => setEditPromptZh(event.target.value)}
-                      placeholder="Chinese prompt"
-                      rows={3}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editWord}
-                      onChange={(event) => setEditWord(event.target.value)}
-                      placeholder="Target translation candidates"
-                      rows={3}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editMeaningZh}
-                      onChange={(event) =>
-                        setEditMeaningZh(event.target.value)
-                      }
-                      placeholder="Chinese meaning"
-                      rows={3}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <input
-                      value={editPartOfSpeech}
-                      onChange={(event) =>
-                        setEditPartOfSpeech(event.target.value)
-                      }
-                      placeholder="Part of speech"
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editExampleSentence}
-                      onChange={(event) =>
-                        setEditExampleSentence(event.target.value)
-                      }
-                      placeholder="Example sentence"
-                      rows={3}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editExampleTranslationZh}
-                      onChange={(event) =>
-                        setEditExampleTranslationZh(event.target.value)
-                      }
-                      placeholder="Example translation"
-                      rows={3}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editUsageNotes}
-                      onChange={(event) =>
-                        setEditUsageNotes(event.target.value)
-                      }
-                      placeholder="Usage notes"
-                      rows={4}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <textarea
-                      value={editNotes}
-                      onChange={(event) => setEditNotes(event.target.value)}
-                      placeholder="Nuance comparison"
-                      rows={4}
-                      className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                    />
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => updateItem(item.id)}
-                        className="rounded-xl bg-neutral-950 px-4 py-2 text-xs font-medium text-white"
-                      >
-                        Save changes
-                      </button>
-
-                      <button
-                        onClick={cancelEdit}
-                        className="rounded-xl border border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-5 grid gap-4">
-                    {item.prompt_zh && (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          Prompt
-                        </p>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
-                          {item.prompt_zh}
-                        </p>
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                        Target translation candidates
-                      </p>
-
-                      <h3 className="mt-2 whitespace-pre-wrap text-2xl font-semibold leading-8 text-neutral-950">
-                        {item.word}
-                      </h3>
-                    </div>
-
-                    {item.meaning_zh && (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          Meaning
-                        </p>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                          {item.meaning_zh}
-                        </p>
-                      </div>
-                    )}
-
-                    {item.example_sentence && (
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          Example sentence
-                        </p>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                          {item.example_sentence}
-                        </p>
-
-                        {item.example_translation_zh && (
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
-                            {item.example_translation_zh}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {item.usage_notes && (
-                      <div className="rounded-2xl bg-neutral-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          Usage notes
-                        </p>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                          {item.usage_notes}
-                        </p>
-                      </div>
-                    )}
-
-                    {item.notes && (
-                      <div className="rounded-2xl bg-neutral-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          Nuance comparison
-                        </p>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                          {item.notes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </section>
       </div>

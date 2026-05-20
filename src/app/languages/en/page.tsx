@@ -33,7 +33,10 @@ export default function EnglishPage() {
           </div>
 
           <Link
-            href="/vocabulary"
+            href={{
+              pathname: "/vocabulary",
+              query: { language: "English" },
+            }}
             className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-neutral-300 hover:shadow-md"
           >
             <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">

@@ -1,8 +1,11 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
+type VocabularyDirection = "zh-to-target" | "target-to-zh";
+
 type ExplainVocabularyRequest = {
   language?: string;
+  direction?: VocabularyDirection;
   prompt_zh?: string;
   word?: string;
 };
@@ -44,7 +47,7 @@ export async function GET() {
     ok: true,
     source: ".env.local",
     route: "explain-vocabulary",
-    mode: "Chinese prompt to target-language vocabulary",
+    mode: "bidirectional vocabulary translation",
     hasOpenAIKey: Boolean(apiKey),
     keyLength: apiKey?.length ?? 0,
     keyStart: apiKey ? apiKey.slice(0, 12) : null,
@@ -66,12 +69,20 @@ export async function POST(request: Request) {
     const body = (await request.json()) as ExplainVocabularyRequest;
 
     const language = body.language || "English";
+    const direction = body.direction || "zh-to-target";
     const promptZh = body.prompt_zh || "";
     const existingWord = body.word || "";
 
-    if (!promptZh.trim() && !existingWord.trim()) {
+    if (direction === "zh-to-target" && !promptZh.trim()) {
       return NextResponse.json(
         { error: "Please provide a Chinese prompt." },
+        { status: 400 }
+      );
+    }
+
+    if (direction === "target-to-zh" && !existingWord.trim()) {
+      return NextResponse.json(
+        { error: "Please provide a target-language word or phrase." },
         { status: 400 }
       );
     }
@@ -85,13 +96,15 @@ export async function POST(request: Request) {
       input: [
         {
           role: "system",
-          content:
-            "You generate vocabulary translations for a personal language-learning app. Return only valid JSON. Do not use markdown or code fences.",
-        },
-        {
-          role: "user",
           content: `
-Return ONLY this JSON shape:
+You generate vocabulary explanations for a personal language-learning app.
+
+Return only valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not add any text outside the JSON object.
+
+The JSON must have exactly this shape:
 {
   "word": "string",
   "meaning_zh": "string",
@@ -101,10 +114,15 @@ Return ONLY this JSON shape:
   "usage_notes": "string",
   "notes": "string"
 }
-
-Target language: ${language}
-Chinese prompt: ${promptZh}
-Existing target word or phrase, if any: ${existingWord}
+`,
+        },
+        {
+          role: "user",
+          content: `
+Direction: ${direction}
+Selected language: ${language}
+Chinese prompt, if any: ${promptZh}
+Target-language word or phrase, if any: ${existingWord}
 
 Important bracket rule:
 - If the Chinese prompt contains text inside square brackets, such as 規定性[黑格爾哲學], the bracketed text is the conceptual domain or contextual determination.
@@ -112,23 +130,31 @@ Important bracket rule:
 - Do not translate the bracketed text itself as part of the output word.
 - Example: 規定性[黑格爾哲學] in English should prefer "determinateness" rather than a generic translation.
 
-Task:
+If Direction is zh-to-target:
+- Translate the Chinese prompt into the selected target language.
 - Generate one or more possible target-language translations.
 - Put all possible translations in the "word" field, separated by semicolons.
 - The first translation should be the most contextually appropriate one.
 - meaning_zh must explain the Chinese meaning in Traditional Chinese.
+- example_sentence must use the first or most appropriate target-language translation.
+
+If Direction is target-to-zh:
+- The user has entered a word or phrase in the selected language.
+- Keep the original word or phrase in the "word" field.
+- meaning_zh must explain its meaning in Traditional Chinese.
+- If the word has multiple meanings, explain the most common meanings and note context differences.
+- example_sentence must be in the selected language and must naturally use the word or phrase.
+- example_translation_zh must be a Traditional Chinese translation of the example.
+
+General rules:
 - part_of_speech should be concise.
-- example_sentence must use the first or most appropriate translation.
 - example_translation_zh must be Traditional Chinese.
 - usage_notes must be Traditional Chinese.
-- notes must be Traditional Chinese and must explain subtle differences among the candidate translations.
-
-Rules:
+- notes must be Traditional Chinese and must explain nuance, register, conceptual usage, or differences among possible meanings/translations.
 - If language is English, explain nuance, register, philosophical or technical usage when relevant.
-- If language is Deutsch, keep explanation suitable for A1 learners unless the prompt is philosophical or technical.
-- If language is Русский, keep explanation suitable for beginners unless the prompt is philosophical or technical.
-- If the prompt is philosophical, preserve conceptual precision.
-- If multiple translations are possible, notes must compare them clearly.
+- If language is Deutsch, keep explanation suitable for A1 learners unless the word is philosophical or technical.
+- If language is Русский, keep explanation suitable for beginners unless the word is philosophical or technical.
+- If the word or prompt is philosophical, preserve conceptual precision.
 `,
         },
       ],
