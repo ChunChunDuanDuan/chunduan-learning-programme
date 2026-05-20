@@ -255,7 +255,7 @@ export default function BlogAdminPage() {
 
                                         <Link
                                             href={`/admin/blog/${post.id}/edit`}
-                                            className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700"
+                                            className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-medium !text-white transition hover:bg-neutral-700"
                                         >
                                             Edit
                                         </Link>
