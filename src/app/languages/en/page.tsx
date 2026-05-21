@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function EnglishPage() {
+export default function EnglishLanguagePage() {
   return (
     <main className="min-h-screen bg-neutral-50 px-6 py-8 text-neutral-950">
       <div className="mx-auto max-w-6xl">
@@ -14,76 +14,152 @@ export default function EnglishPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
-            Your English module is designed for C1-level development: vocabulary
-            refinement, sentence analysis, academic expression, and advanced
-            reading practice.
+            C1-level English learning space for vocabulary, sentence analysis,
+            article reading, grammar review, and academic expression.
           </p>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-              Level
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">C1</h2>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
-              Focus on nuance, academic vocabulary, sentence structure, and
-              precise expression.
-            </p>
-          </div>
-
+        <section className="grid gap-4 md:grid-cols-3">
           <Link
-            href={{
-              pathname: "/vocabulary",
-              query: { language: "English" },
-            }}
-            className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-neutral-300 hover:shadow-md"
+            href="/vocabulary?language=en"
+            className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-              Database
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">Vocabulary</h2>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
-              Save and review English words, meanings, examples, and familiarity
-              status.
+            <h2 className="text-lg font-semibold">Vocabulary</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              Review English words, collocations, usage notes, and example
+              sentences.
             </p>
           </Link>
 
-          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-              Coming Soon
+          <Link
+            href="/sentences?language=en"
+            className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold">Sentence Practice</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              Practise English sentence structure, style, and word-by-word
+              analysis.
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">Sentence Practice</h2>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
-              Practice translation, rewriting, and word-by-word analysis.
-            </p>
-          </div>
+          </Link>
 
-          <div className="rounded-3xl border border-dashed border-neutral-300 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-              Coming Soon
+          <Link
+            href="/articles?language=en"
+            className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold">Articles</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">
+              Read English articles on culture, philosophy, science, history,
+              literature, and daily life.
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">Articles</h2>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">
-              Read advanced short articles with vocabulary and sentence notes.
-            </p>
+          </Link>
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <h2 className="text-2xl font-semibold">English Tense Reference</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            A compact table for reviewing the basic tense-aspect system.
+          </p>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-100">
+                  <th className="p-3 font-semibold">Form</th>
+                  <th className="p-3 font-semibold">Example</th>
+                  <th className="p-3 font-semibold">Main Use</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Present Simple</td>
+                  <td className="p-3">I study every day.</td>
+                  <td className="p-3">Habits, facts, regular actions.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Present Continuous</td>
+                  <td className="p-3">I am studying now.</td>
+                  <td className="p-3">Actions happening now or around now.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Present Perfect</td>
+                  <td className="p-3">I have studied this before.</td>
+                  <td className="p-3">Past action with present relevance.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Past Simple</td>
+                  <td className="p-3">I studied yesterday.</td>
+                  <td className="p-3">Completed past actions.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Past Continuous</td>
+                  <td className="p-3">I was studying at eight.</td>
+                  <td className="p-3">Ongoing past actions.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">Future with will</td>
+                  <td className="p-3">I will study tomorrow.</td>
+                  <td className="p-3">Predictions, promises, spontaneous decisions.</td>
+                </tr>
+
+                <tr>
+                  <td className="p-3 font-medium">Going to</td>
+                  <td className="p-3">I am going to study tonight.</td>
+                  <td className="p-3">Plans, intentions, visible future results.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
-        <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-            Current Focus
+        <section className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <h2 className="text-2xl font-semibold">Clause Patterns</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-600">
+            Basic sentence structures useful for reading and writing analysis.
           </p>
 
-          <h2 className="mt-2 text-2xl font-semibold">
-            Advanced expression and analysis
-          </h2>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-100">
+                  <th className="p-3 font-semibold">Pattern</th>
+                  <th className="p-3 font-semibold">Example</th>
+                  <th className="p-3 font-semibold">Structure</th>
+                </tr>
+              </thead>
 
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-600">
-            English should support not only vocabulary storage, but also
-            sentence-level explanation, multiple translation versions, and
-            detailed analysis of academic or philosophical passages.
-          </p>
+              <tbody>
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">S + V</td>
+                  <td className="p-3">She sleeps.</td>
+                  <td className="p-3">Subject + verb.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">S + V + O</td>
+                  <td className="p-3">She reads a book.</td>
+                  <td className="p-3">Subject + verb + object.</td>
+                </tr>
+
+                <tr className="border-b border-neutral-200">
+                  <td className="p-3 font-medium">S + V + C</td>
+                  <td className="p-3">She is tired.</td>
+                  <td className="p-3">Subject + linking verb + complement.</td>
+                </tr>
+
+                <tr>
+                  <td className="p-3 font-medium">S + V + O + C</td>
+                  <td className="p-3">They made him angry.</td>
+                  <td className="p-3">Object followed by object complement.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </main>

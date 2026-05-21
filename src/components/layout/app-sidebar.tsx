@@ -133,9 +133,9 @@ export function AppSidebar({
                 <NavLink href="/vocabulary">Vocabulary</NavLink>
                 <NavLink href="/sentences">Sentence Practice</NavLink>
                 <NavLink href="/articles">Articles</NavLink>
-                <NavLink href="/english">English</NavLink>
-                <NavLink href="/deutsch">Deutsch</NavLink>
-                <NavLink href="/russian">Русский</NavLink>
+                <NavLink href="/languages/en">English</NavLink>
+                <NavLink href="/languages/de">Deutsch</NavLink>
+                <NavLink href="/languages/ru">Русский</NavLink>
               </div>
             </section>
 

@@ -150,11 +150,28 @@ General rules:
 - part_of_speech should be concise.
 - example_translation_zh must be Traditional Chinese.
 - usage_notes must be Traditional Chinese.
+- usage_notes must not merely repeat the basic meaning of the word.
+- usage_notes must explain how the word is naturally used.
+- usage_notes should include common collocations, fixed phrases, verb patterns, prepositional patterns, or case patterns when relevant.
+- usage_notes should be genuinely useful for language learning, not just a generic description.
 - notes must be Traditional Chinese and must explain nuance, register, conceptual usage, or differences among possible meanings/translations.
 - If language is English, explain nuance, register, philosophical or technical usage when relevant.
 - If language is Deutsch, keep explanation suitable for A1 learners unless the word is philosophical or technical.
 - If language is Русский, keep explanation suitable for beginners unless the word is philosophical or technical.
 - If the word or prompt is philosophical, preserve conceptual precision.
+
+Language-specific usage_notes rules:
+- For English words, include natural collocations, register differences, and common academic or daily-life uses when relevant.
+- For German words, include common verb combinations, separable patterns, prepositional combinations, article/case information, or fixed expressions when relevant.
+- For Russian words, include common verb pairings, case patterns, everyday phrases, aspectual contrast, or common government patterns when relevant.
+
+Examples of good usage_notes:
+- For German "darüber", mention useful patterns such as "darüber nachdenken", "darüber sprechen", "darüber diskutieren", "sich darüber freuen".
+- For German "warten", mention "auf etwas warten" and explain that "auf" usually takes Akkusativ here.
+- For Russian "нравиться", mention the pattern "мне нравится..." and explain that the experiencer uses dative.
+- For English "conduct", mention "conduct research", "conduct an experiment", and the difference between verb and noun if relevant.
+
+Keep usage_notes concise, but include concrete phrase patterns whenever possible.
 `,
         },
       ],
