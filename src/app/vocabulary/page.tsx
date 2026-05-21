@@ -76,6 +76,19 @@ export default function VocabularyPage() {
   const [editNotes, setEditNotes] = useState("");
 
   const [explainingId, setExplainingId] = useState<string | null>(null);
+  const [expandedVocabularyIds, setExpandedVocabularyIds] = useState<string[]>(
+    []
+  );
+
+  function toggleVocabularyCard(id: string) {
+    if (editingId === id) return;
+
+    setExpandedVocabularyIds((currentIds) =>
+      currentIds.includes(id)
+        ? currentIds.filter((currentId) => currentId !== id)
+        : [...currentIds, id]
+    );
+  }
 
   async function loadItems() {
     setLoading(true);
@@ -242,6 +255,10 @@ export default function VocabularyPage() {
             : currentItem
         )
       );
+
+      setExpandedVocabularyIds((currentIds) =>
+        currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+      );
     } catch (error) {
       console.error("Explain saved vocabulary error:", error);
       alert("Failed to explain vocabulary.");
@@ -353,9 +370,16 @@ export default function VocabularyPage() {
     }
 
     setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+    setExpandedVocabularyIds((currentIds) =>
+      currentIds.filter((currentId) => currentId !== id)
+    );
   }
 
   function startEdit(item: VocabularyItem) {
+    setExpandedVocabularyIds((currentIds) =>
+      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+    );
+
     setEditingId(item.id);
     setEditLanguage(item.language);
     setEditDirection(item.direction ?? "zh-to-target");
@@ -504,6 +528,7 @@ export default function VocabularyPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => setShowAddForm((prev) => !prev)}
               className="rounded-2xl border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
             >
@@ -589,6 +614,7 @@ export default function VocabularyPage() {
               </div>
 
               <button
+                type="button"
                 onClick={generateVocabularyExplanation}
                 disabled={generating || saving}
                 className="rounded-2xl border border-neutral-300 bg-neutral-50 px-5 py-3 text-sm font-medium text-neutral-800 hover:bg-neutral-100 disabled:opacity-50"
@@ -686,6 +712,7 @@ export default function VocabularyPage() {
               </div>
 
               <button
+                type="button"
                 onClick={saveItem}
                 disabled={saving || generating}
                 className="rounded-2xl bg-neutral-950 px-5 py-3 text-sm font-medium text-white disabled:opacity-50"
@@ -751,269 +778,294 @@ export default function VocabularyPage() {
           <div className="mt-5 grid gap-4">
             {filteredItems.map((item) => {
               const itemDirection = item.direction ?? "zh-to-target";
+              const isExpanded =
+                expandedVocabularyIds.includes(item.id) ||
+                editingId === item.id;
 
               return (
                 <article
                   key={item.id}
-                  className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+                  className="rounded-3xl border border-neutral-200 bg-white shadow-sm"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-                        {item.language}
-                      </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleVocabularyCard(item.id)}
+                    className="flex w-full items-start justify-between gap-4 rounded-3xl px-6 py-5 text-left hover:bg-neutral-50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                        Original word or phrase
+                      </p>
 
-                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-                        {getDirectionLabel(itemDirection)}
-                      </span>
-
-                      {item.part_of_speech && (
-                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
-                          {item.part_of_speech}
-                        </span>
-                      )}
-
-                      <span className="text-xs text-neutral-400">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </span>
+                      <h3 className="mt-2 whitespace-pre-wrap break-words text-2xl font-semibold leading-8 text-neutral-950">
+                        {item.word}
+                      </h3>
                     </div>
 
-                    {editingId !== item.id && (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          onClick={() => explainSavedItem(item)}
-                          disabled={explainingId === item.id}
-                          className="rounded-xl border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-                        >
-                          {explainingId === item.id
-                            ? "Explaining..."
-                            : "AI Explain"}
-                        </button>
+                    <span className="shrink-0 rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-600">
+                      {isExpanded ? "Collapse" : "Expand"}
+                    </span>
+                  </button>
 
-                        <button
-                          onClick={() => startEdit(item)}
-                          className="rounded-xl border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
-                        >
-                          Edit
-                        </button>
+                  {isExpanded && (
+                    <div className="border-t border-neutral-200 px-6 pb-6 pt-5">
+                      <div className="mb-4 flex items-start justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                            {item.language}
+                          </span>
 
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="rounded-xl border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                            {getDirectionLabel(itemDirection)}
+                          </span>
 
-                  {editingId === item.id ? (
-                    <div className="mt-5 grid gap-4">
-                      <select
-                        value={editDirection}
-                        onChange={(event) =>
-                          setEditDirection(
-                            event.target.value as VocabularyDirection
-                          )
-                        }
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      >
-                        <option value="zh-to-target">
-                          Chinese → target language
-                        </option>
-                        <option value="target-to-zh">
-                          Target language → Chinese
-                        </option>
-                      </select>
-
-                      <select
-                        value={editLanguage}
-                        onChange={(event) =>
-                          setEditLanguage(event.target.value)
-                        }
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      >
-                        {languages.map((lang) => (
-                          <option key={lang} value={lang}>
-                            {lang}
-                          </option>
-                        ))}
-                      </select>
-
-                      {editDirection === "zh-to-target" && (
-                        <textarea
-                          value={editPromptZh}
-                          onChange={(event) =>
-                            setEditPromptZh(event.target.value)
-                          }
-                          placeholder="Chinese prompt"
-                          rows={3}
-                          className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                        />
-                      )}
-
-                      <textarea
-                        value={editWord}
-                        onChange={(event) => setEditWord(event.target.value)}
-                        placeholder={
-                          editDirection === "zh-to-target"
-                            ? "Target translation candidates"
-                            : "Original word or phrase"
-                        }
-                        rows={3}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <textarea
-                        value={editMeaningZh}
-                        onChange={(event) =>
-                          setEditMeaningZh(event.target.value)
-                        }
-                        placeholder="Chinese meaning"
-                        rows={3}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <input
-                        value={editPartOfSpeech}
-                        onChange={(event) =>
-                          setEditPartOfSpeech(event.target.value)
-                        }
-                        placeholder="Part of speech"
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <textarea
-                        value={editExampleSentence}
-                        onChange={(event) =>
-                          setEditExampleSentence(event.target.value)
-                        }
-                        placeholder="Example sentence"
-                        rows={3}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <textarea
-                        value={editExampleTranslationZh}
-                        onChange={(event) =>
-                          setEditExampleTranslationZh(event.target.value)
-                        }
-                        placeholder="Example translation"
-                        rows={3}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <textarea
-                        value={editUsageNotes}
-                        onChange={(event) =>
-                          setEditUsageNotes(event.target.value)
-                        }
-                        placeholder="Usage notes"
-                        rows={4}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <textarea
-                        value={editNotes}
-                        onChange={(event) => setEditNotes(event.target.value)}
-                        placeholder="Nuance comparison"
-                        rows={4}
-                        className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
-                      />
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateItem(item.id)}
-                          className="rounded-xl bg-neutral-950 px-4 py-2 text-xs font-medium text-white"
-                        >
-                          Save changes
-                        </button>
-
-                        <button
-                          onClick={cancelEdit}
-                          className="rounded-xl border border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 grid gap-4">
-                      {itemDirection === "zh-to-target" && item.prompt_zh && (
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                            Chinese prompt
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
-                            {item.prompt_zh}
-                          </p>
-                        </div>
-                      )}
-
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                          {itemDirection === "zh-to-target"
-                            ? "Target translation candidates"
-                            : "Original word or phrase"}
-                        </p>
-
-                        <h3 className="mt-2 whitespace-pre-wrap text-2xl font-semibold leading-8 text-neutral-950">
-                          {item.word}
-                        </h3>
-                      </div>
-
-                      {item.meaning_zh && (
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                            Chinese meaning
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                            {item.meaning_zh}
-                          </p>
-                        </div>
-                      )}
-
-                      {item.example_sentence && (
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                            Example sentence
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                            {item.example_sentence}
-                          </p>
-
-                          {item.example_translation_zh && (
-                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
-                              {item.example_translation_zh}
-                            </p>
+                          {item.part_of_speech && (
+                            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                              {item.part_of_speech}
+                            </span>
                           )}
+
+                          <span className="text-xs text-neutral-400">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
                         </div>
-                      )}
 
-                      {item.usage_notes && (
-                        <div className="rounded-2xl bg-neutral-50 px-4 py-3">
-                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                            Usage notes
-                          </p>
+                        {editingId !== item.id && (
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => explainSavedItem(item)}
+                              disabled={explainingId === item.id}
+                              className="rounded-xl border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                            >
+                              {explainingId === item.id
+                                ? "Explaining..."
+                                : "AI Explain"}
+                            </button>
 
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                            {item.usage_notes}
-                          </p>
+                            <button
+                              type="button"
+                              onClick={() => startEdit(item)}
+                              className="rounded-xl border border-blue-200 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => deleteItem(item.id)}
+                              className="rounded-xl border border-red-200 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {editingId === item.id ? (
+                        <div className="mt-5 grid gap-4">
+                          <select
+                            value={editDirection}
+                            onChange={(event) =>
+                              setEditDirection(
+                                event.target.value as VocabularyDirection
+                              )
+                            }
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          >
+                            <option value="zh-to-target">
+                              Chinese → target language
+                            </option>
+                            <option value="target-to-zh">
+                              Target language → Chinese
+                            </option>
+                          </select>
+
+                          <select
+                            value={editLanguage}
+                            onChange={(event) =>
+                              setEditLanguage(event.target.value)
+                            }
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          >
+                            {languages.map((lang) => (
+                              <option key={lang} value={lang}>
+                                {lang}
+                              </option>
+                            ))}
+                          </select>
+
+                          {editDirection === "zh-to-target" && (
+                            <textarea
+                              value={editPromptZh}
+                              onChange={(event) =>
+                                setEditPromptZh(event.target.value)
+                              }
+                              placeholder="Chinese prompt"
+                              rows={3}
+                              className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                            />
+                          )}
+
+                          <textarea
+                            value={editWord}
+                            onChange={(event) =>
+                              setEditWord(event.target.value)
+                            }
+                            placeholder={
+                              editDirection === "zh-to-target"
+                                ? "Target translation candidates"
+                                : "Original word or phrase"
+                            }
+                            rows={3}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <textarea
+                            value={editMeaningZh}
+                            onChange={(event) =>
+                              setEditMeaningZh(event.target.value)
+                            }
+                            placeholder="Chinese meaning"
+                            rows={3}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <input
+                            value={editPartOfSpeech}
+                            onChange={(event) =>
+                              setEditPartOfSpeech(event.target.value)
+                            }
+                            placeholder="Part of speech"
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <textarea
+                            value={editExampleSentence}
+                            onChange={(event) =>
+                              setEditExampleSentence(event.target.value)
+                            }
+                            placeholder="Example sentence"
+                            rows={3}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <textarea
+                            value={editExampleTranslationZh}
+                            onChange={(event) =>
+                              setEditExampleTranslationZh(event.target.value)
+                            }
+                            placeholder="Example translation"
+                            rows={3}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <textarea
+                            value={editUsageNotes}
+                            onChange={(event) =>
+                              setEditUsageNotes(event.target.value)
+                            }
+                            placeholder="Usage notes"
+                            rows={4}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <textarea
+                            value={editNotes}
+                            onChange={(event) =>
+                              setEditNotes(event.target.value)
+                            }
+                            placeholder="Nuance comparison"
+                            rows={4}
+                            className="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm"
+                          />
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateItem(item.id)}
+                              className="rounded-xl bg-neutral-950 px-4 py-2 text-xs font-medium text-white"
+                            >
+                              Save changes
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="rounded-xl border border-neutral-300 px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      )}
+                      ) : (
+                        <div className="mt-5 grid gap-4">
+                          {itemDirection === "zh-to-target" &&
+                            item.prompt_zh && (
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                                  Chinese prompt
+                                </p>
 
-                      {item.notes && (
-                        <div className="rounded-2xl bg-neutral-50 px-4 py-3">
-                          <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-                            Nuance comparison
-                          </p>
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
+                                  {item.prompt_zh}
+                                </p>
+                              </div>
+                            )}
 
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                            {item.notes}
-                          </p>
+                          {item.meaning_zh && (
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                                Chinese meaning
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                                {item.meaning_zh}
+                              </p>
+                            </div>
+                          )}
+
+                          {item.example_sentence && (
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                                Example sentence
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                                {item.example_sentence}
+                              </p>
+
+                              {item.example_translation_zh && (
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-500">
+                                  {item.example_translation_zh}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {item.usage_notes && (
+                            <div className="rounded-2xl bg-neutral-50 px-4 py-3">
+                              <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                                Usage notes
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                {item.usage_notes}
+                              </p>
+                            </div>
+                          )}
+
+                          {item.notes && (
+                            <div className="rounded-2xl bg-neutral-50 px-4 py-3">
+                              <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
+                                Nuance comparison
+                              </p>
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                {item.notes}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
