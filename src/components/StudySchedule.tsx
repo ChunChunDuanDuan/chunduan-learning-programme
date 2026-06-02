@@ -10,13 +10,19 @@ import {
 } from "../lib/schedule";
 
 function todayString() {
-    return new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
 }
 
 export default function StudySchedule() {
     const [date, setDate] = useState(todayString());
     const [blocks, setBlocks] = useState<StudyScheduleBlock[]>([]);
     const [loading, setLoading] = useState(false);
+    const [collapsedBlockIds, setCollapsedBlockIds] = useState<string[]>([]);
 
     const [form, setForm] = useState({
         title: "",
@@ -35,6 +41,7 @@ export default function StudySchedule() {
 
     async function loadBlocks() {
         setLoading(true);
+
         try {
             const data = await getScheduleBlocks(date);
             setBlocks(data);
@@ -46,6 +53,14 @@ export default function StudySchedule() {
     useEffect(() => {
         loadBlocks();
     }, [date]);
+
+    function toggleCollapse(blockId: string) {
+        setCollapsedBlockIds((current) =>
+            current.includes(blockId)
+                ? current.filter((id) => id !== blockId)
+                : [...current, blockId]
+        );
+    }
 
     async function handleCreate() {
         if (!form.title.trim()) return;
@@ -92,6 +107,7 @@ export default function StudySchedule() {
             status: "in_progress",
             actual_start_time: new Date().toISOString(),
         });
+
         await loadBlocks();
     }
 
@@ -99,6 +115,7 @@ export default function StudySchedule() {
         await updateScheduleBlock(block.id, {
             status: "paused",
         });
+
         await loadBlocks();
     }
 
@@ -107,6 +124,7 @@ export default function StudySchedule() {
             status: "completed",
             actual_end_time: new Date().toISOString(),
         });
+
         await loadBlocks();
     }
 
@@ -115,6 +133,7 @@ export default function StudySchedule() {
             status: "carried_over",
             actual_end_time: new Date().toISOString(),
         });
+
         await loadBlocks();
     }
 
@@ -126,6 +145,7 @@ export default function StudySchedule() {
         await updateScheduleBlock(block.id, {
             [field]: value,
         });
+
         await loadBlocks();
     }
 
@@ -253,6 +273,7 @@ export default function StudySchedule() {
                 </div>
 
                 <button
+                    type="button"
                     onClick={handleCreate}
                     className="mt-5 rounded-xl bg-black px-4 py-2 text-white hover:bg-neutral-800"
                 >
@@ -272,131 +293,179 @@ export default function StudySchedule() {
                 )}
 
                 <div className="space-y-5">
-                    {blocks.map((block) => (
-                        <article
-                            key={block.id}
-                            className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
-                        >
-                            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <h3 className="text-lg font-semibold">{block.title}</h3>
-                                    <p className="text-sm text-neutral-500">
-                                        {block.start_time.slice(0, 5)}–{block.end_time.slice(0, 5)}
-                                        {block.no_new_section_after
-                                            ? `｜${block.no_new_section_after.slice(
-                                                0,
-                                                5
-                                            )} 後不開新段落`
-                                            : ""}
-                                    </p>
-                                    {block.source_title && (
+                    {blocks.map((block) => {
+                        const isCollapsed = collapsedBlockIds.includes(block.id);
+
+                        return (
+                            <article
+                                key={block.id}
+                                className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
+                            >
+                                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleCollapse(block.id)}
+                                        className="min-w-0 flex-1 text-left"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-neutral-400">
+                                                {isCollapsed ? "＋" : "－"}
+                                            </span>
+
+                                            <h3 className="text-lg font-semibold">{block.title}</h3>
+                                        </div>
+
                                         <p className="mt-1 text-sm text-neutral-500">
-                                            {block.source_title}
-                                            {block.source_author ? `｜${block.source_author}` : ""}
+                                            {block.start_time.slice(0, 5)}–
+                                            {block.end_time.slice(0, 5)}
+                                            {block.no_new_section_after
+                                                ? `｜${block.no_new_section_after.slice(
+                                                    0,
+                                                    5
+                                                )} 後不開新段落`
+                                                : ""}
                                         </p>
-                                    )}
+
+                                        {block.source_title && (
+                                            <p className="mt-1 text-sm text-neutral-500">
+                                                {block.source_title}
+                                                {block.source_author
+                                                    ? `｜${block.source_author}`
+                                                    : ""}
+                                            </p>
+                                        )}
+                                    </button>
+
+                                    <StatusBadge status={block.status} />
                                 </div>
 
-                                <StatusBadge status={block.status} />
-                            </div>
+                                {!isCollapsed && (
+                                    <>
+                                        <div className="mb-4 grid gap-3 text-sm md:grid-cols-3">
+                                            <InfoBox title="最低完成" value={block.minimum_goal} />
+                                            <InfoBox title="理想完成" value={block.ideal_goal} />
+                                            <InfoBox title="可停止點" value={block.stop_point} />
+                                        </div>
 
-                            <div className="mb-4 grid gap-3 text-sm md:grid-cols-3">
-                                <InfoBox title="最低完成" value={block.minimum_goal} />
-                                <InfoBox title="理想完成" value={block.ideal_goal} />
-                                <InfoBox title="可停止點" value={block.stop_point} />
-                            </div>
+                                        <div className="mb-4 rounded-xl bg-neutral-50 p-4 text-sm">
+                                            <p>
+                                                緩衝：{block.buffer_minutes} 分鐘｜最多延展：
+                                                {block.max_extension_minutes} 分鐘
+                                            </p>
+                                        </div>
 
-                            <div className="mb-4 rounded-xl bg-neutral-50 p-4 text-sm">
-                                <p>
-                                    緩衝：{block.buffer_minutes} 分鐘｜最多延展：
-                                    {block.max_extension_minutes} 分鐘
-                                </p>
-                            </div>
+                                        <div className="mb-4 flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startBlock(block)}
+                                                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                                            >
+                                                開始
+                                            </button>
 
-                            <div className="mb-4 flex flex-wrap gap-2">
-                                <button
-                                    onClick={() => startBlock(block)}
-                                    className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
-                                >
-                                    開始
-                                </button>
-                                <button
-                                    onClick={() => pauseBlock(block)}
-                                    className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
-                                >
-                                    暫停
-                                </button>
-                                <button
-                                    onClick={() => completeBlock(block)}
-                                    className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
-                                >
-                                    完成
-                                </button>
-                                <button
-                                    onClick={() => carryOverBlock(block)}
-                                    className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
-                                >
-                                    留到下次
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        await deleteScheduleBlock(block.id);
-                                        await loadBlocks();
-                                    }}
-                                    className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                                >
-                                    刪除
-                                </button>
-                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => pauseBlock(block)}
+                                                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                                            >
+                                                暫停
+                                            </button>
 
-                            <div className="grid gap-4">
-                                <Textarea
-                                    label="今日停止處"
-                                    value={block.current_position || ""}
-                                    onBlur={(v) =>
-                                        updateInterruptionNote(block, "current_position", v)
-                                    }
-                                    placeholder="例如：第 X 頁，第 X 段，討論世界內存在的地方"
-                                />
+                                            <button
+                                                type="button"
+                                                onClick={() => completeBlock(block)}
+                                                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                                            >
+                                                完成
+                                            </button>
 
-                                <Textarea
-                                    label="目前論證在說"
-                                    value={block.current_argument || ""}
-                                    onBlur={(v) =>
-                                        updateInterruptionNote(block, "current_argument", v)
-                                    }
-                                    placeholder="用 2–4 句寫下目前論證推進到哪裡"
-                                />
+                                            <button
+                                                type="button"
+                                                onClick={() => carryOverBlock(block)}
+                                                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                                            >
+                                                留到下次
+                                            </button>
 
-                                <Textarea
-                                    label="我已經理解的是"
-                                    value={block.understood || ""}
-                                    onBlur={(v) =>
-                                        updateInterruptionNote(block, "understood", v)
-                                    }
-                                    placeholder="例如：世界不是物的總和，而是意義關聯整體"
-                                />
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    await deleteScheduleBlock(block.id);
+                                                    await loadBlocks();
+                                                }}
+                                                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                                            >
+                                                刪除
+                                            </button>
+                                        </div>
 
-                                <Textarea
-                                    label="我還沒弄懂的是"
-                                    value={block.unresolved_question || ""}
-                                    onBlur={(v) =>
-                                        updateInterruptionNote(block, "unresolved_question", v)
-                                    }
-                                    placeholder="例如：為什麼順手性比現成性更原初？"
-                                />
+                                        <div className="grid gap-4">
+                                            <Textarea
+                                                label="今日停止處"
+                                                value={block.current_position || ""}
+                                                onBlur={(v) =>
+                                                    updateInterruptionNote(
+                                                        block,
+                                                        "current_position",
+                                                        v
+                                                    )
+                                                }
+                                                placeholder="例如：第 X 頁，第 X 段，討論世界內存在的地方"
+                                            />
 
-                                <Textarea
-                                    label="下次回來先從這裡開始"
-                                    value={block.next_entry_point || ""}
-                                    onBlur={(v) =>
-                                        updateInterruptionNote(block, "next_entry_point", v)
-                                    }
-                                    placeholder="例如：先重讀順手性與現成性的區分，再接下一段"
-                                />
-                            </div>
-                        </article>
-                    ))}
+                                            <Textarea
+                                                label="目前論證在說"
+                                                value={block.current_argument || ""}
+                                                onBlur={(v) =>
+                                                    updateInterruptionNote(
+                                                        block,
+                                                        "current_argument",
+                                                        v
+                                                    )
+                                                }
+                                                placeholder="用 2–4 句寫下目前論證推進到哪裡"
+                                            />
+
+                                            <Textarea
+                                                label="我已經理解的是"
+                                                value={block.understood || ""}
+                                                onBlur={(v) =>
+                                                    updateInterruptionNote(block, "understood", v)
+                                                }
+                                                placeholder="例如：世界不是物的總和，而是意義關聯整體"
+                                            />
+
+                                            <Textarea
+                                                label="我還沒弄懂的是"
+                                                value={block.unresolved_question || ""}
+                                                onBlur={(v) =>
+                                                    updateInterruptionNote(
+                                                        block,
+                                                        "unresolved_question",
+                                                        v
+                                                    )
+                                                }
+                                                placeholder="例如：為什麼順手性比現成性更原初？"
+                                            />
+
+                                            <Textarea
+                                                label="下次回來先從這裡開始"
+                                                value={block.next_entry_point || ""}
+                                                onBlur={(v) =>
+                                                    updateInterruptionNote(
+                                                        block,
+                                                        "next_entry_point",
+                                                        v
+                                                    )
+                                                }
+                                                placeholder="例如：先重讀順手性與現成性的區分，再接下一段"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </article>
+                        );
+                    })}
                 </div>
             </section>
         </div>
