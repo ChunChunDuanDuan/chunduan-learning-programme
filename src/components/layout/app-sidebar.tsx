@@ -111,6 +111,7 @@ export function AppSidebar({
               <div className="flex flex-col gap-4 text-sm">
                 <NavLink href="/dashboard">Dashboard</NavLink>
                 <NavLink href="/schedule">Study Schedule</NavLink>
+                <NavLink href="/progress">Learning Progress</NavLink>
                 <NavLink href="/review">Review</NavLink>
               </div>
             </section>
