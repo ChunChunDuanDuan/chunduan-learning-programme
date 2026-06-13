@@ -12,6 +12,22 @@ type AppSidebarProps = {
   onNavigate?: () => void;
 };
 
+function SidebarNavLink({
+  href,
+  children,
+  onNavigate,
+}: {
+  href: string;
+  children: React.ReactNode;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link href={href} onClick={onNavigate} className="hover:text-neutral-500">
+      {children}
+    </Link>
+  );
+}
+
 export function AppSidebar({
   variant = "desktop",
   onNavigate,
@@ -65,20 +81,6 @@ export function AppSidebar({
       ? "fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-neutral-200 bg-white px-8 py-8 text-neutral-950 lg:flex lg:flex-col"
       : "h-full w-72 overflow-y-auto bg-white px-8 py-8 text-neutral-950";
 
-  function NavLink({
-    href,
-    children,
-  }: {
-    href: string;
-    children: React.ReactNode;
-  }) {
-    return (
-      <Link href={href} onClick={onNavigate} className="hover:text-neutral-500">
-        {children}
-      </Link>
-    );
-  }
-
   return (
     <aside className={asideClassName}>
       <Link
@@ -96,8 +98,12 @@ export function AppSidebar({
           </p>
 
           <div className="flex flex-col gap-4 text-sm">
-            <NavLink href="/">Home</NavLink>
-            <NavLink href="/blog">Blog</NavLink>
+            <SidebarNavLink href="/" onNavigate={onNavigate}>
+              Home
+            </SidebarNavLink>
+            <SidebarNavLink href="/blog" onNavigate={onNavigate}>
+              Blog
+            </SidebarNavLink>
           </div>
         </section>
 
@@ -109,10 +115,21 @@ export function AppSidebar({
               </p>
 
               <div className="flex flex-col gap-4 text-sm">
-                <NavLink href="/dashboard">Dashboard</NavLink>
-                <NavLink href="/schedule">Study Schedule</NavLink>
-                <NavLink href="/progress">Learning Progress</NavLink>
-                <NavLink href="/review">Review</NavLink>
+                <SidebarNavLink href="/dashboard" onNavigate={onNavigate}>
+                  Dashboard
+                </SidebarNavLink>
+                <SidebarNavLink href="/schedule" onNavigate={onNavigate}>
+                  Study Schedule
+                </SidebarNavLink>
+                <SidebarNavLink href="/philosophy" onNavigate={onNavigate}>
+                  Philosophy
+                </SidebarNavLink>
+                <SidebarNavLink href="/progress" onNavigate={onNavigate}>
+                  Learning Progress
+                </SidebarNavLink>
+                <SidebarNavLink href="/review" onNavigate={onNavigate}>
+                  Review
+                </SidebarNavLink>
               </div>
             </section>
 
@@ -122,7 +139,9 @@ export function AppSidebar({
               </p>
 
               <div className="flex flex-col gap-4 text-sm">
-                <NavLink href="/daily-log">Daily Log</NavLink>
+                <SidebarNavLink href="/daily-log" onNavigate={onNavigate}>
+                  Daily Log
+                </SidebarNavLink>
               </div>
             </section>
 
@@ -132,12 +151,24 @@ export function AppSidebar({
               </p>
 
               <div className="flex flex-col gap-4 text-sm">
-                <NavLink href="/vocabulary">Vocabulary</NavLink>
-                <NavLink href="/sentences">Sentence Practice</NavLink>
-                <NavLink href="/articles">Articles</NavLink>
-                <NavLink href="/languages/en">English</NavLink>
-                <NavLink href="/languages/de">Deutsch</NavLink>
-                <NavLink href="/languages/ru">Русский</NavLink>
+                <SidebarNavLink href="/vocabulary" onNavigate={onNavigate}>
+                  Vocabulary
+                </SidebarNavLink>
+                <SidebarNavLink href="/sentences" onNavigate={onNavigate}>
+                  Sentence Practice
+                </SidebarNavLink>
+                <SidebarNavLink href="/articles" onNavigate={onNavigate}>
+                  Articles
+                </SidebarNavLink>
+                <SidebarNavLink href="/languages/en" onNavigate={onNavigate}>
+                  English
+                </SidebarNavLink>
+                <SidebarNavLink href="/languages/de" onNavigate={onNavigate}>
+                  Deutsch
+                </SidebarNavLink>
+                <SidebarNavLink href="/languages/ru" onNavigate={onNavigate}>
+                  Русский
+                </SidebarNavLink>
               </div>
             </section>
 
@@ -147,7 +178,9 @@ export function AppSidebar({
               </p>
 
               <div className="flex flex-col gap-4 text-sm">
-                <NavLink href="/admin/blog">Manage Blog</NavLink>
+                <SidebarNavLink href="/admin/blog" onNavigate={onNavigate}>
+                  Manage Blog
+                </SidebarNavLink>
               </div>
             </section>
           </>
@@ -161,8 +194,12 @@ export function AppSidebar({
           <div className="flex flex-col gap-4 text-sm">
             {isSignedIn ? (
               <>
-                <NavLink href="/settings">Settings</NavLink>
-                <NavLink href="/login">Account</NavLink>
+                <SidebarNavLink href="/settings" onNavigate={onNavigate}>
+                  Settings
+                </SidebarNavLink>
+                <SidebarNavLink href="/login" onNavigate={onNavigate}>
+                  Account
+                </SidebarNavLink>
 
                 <button
                   type="button"
@@ -173,7 +210,9 @@ export function AppSidebar({
                 </button>
               </>
             ) : (
-              <NavLink href="/login">Login</NavLink>
+              <SidebarNavLink href="/login" onNavigate={onNavigate}>
+                Login
+              </SidebarNavLink>
             )}
           </div>
         </section>

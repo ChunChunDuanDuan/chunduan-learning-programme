@@ -13,6 +13,7 @@ const publicRoutes = ["/", "/login"];
 
 const privateRoutePrefixes = [
   "/dashboard",
+  "/philosophy",
   "/review",
   "/daily-log",
   "/vocabulary",
