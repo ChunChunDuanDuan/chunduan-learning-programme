@@ -124,6 +124,9 @@ export function AppSidebar({
                 <SidebarNavLink href="/philosophy" onNavigate={onNavigate}>
                   Philosophy
                 </SidebarNavLink>
+                <SidebarNavLink href="/night-sparks" onNavigate={onNavigate}>
+                  Night Sparks
+                </SidebarNavLink>
                 <SidebarNavLink href="/progress" onNavigate={onNavigate}>
                   Learning Progress
                 </SidebarNavLink>
@@ -167,7 +170,7 @@ export function AppSidebar({
                   Deutsch
                 </SidebarNavLink>
                 <SidebarNavLink href="/languages/ru" onNavigate={onNavigate}>
-                  Русский
+                  ????郕邽邿
                 </SidebarNavLink>
               </div>
             </section>

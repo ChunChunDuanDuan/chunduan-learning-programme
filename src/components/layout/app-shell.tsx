@@ -16,6 +16,7 @@ const privateRoutePrefixes = [
   "/philosophy",
   "/review",
   "/daily-log",
+  "/night-sparks",
   "/vocabulary",
   "/sentences",
   "/articles",
