@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   createNightSparkEntry,
@@ -17,22 +18,195 @@ import type {
   TextLinkMode,
   TextLinkSearchResponse,
   TextLinkSearchResult,
-  TextRecord,
 } from "../types/text-linker";
 
-const socraticQuestions = [
-  "你現在理解的「存在者」是某個具體東西，還是凡是能被說為存在的東西？",
-  "如果「自由」不是任意選擇，那它是什麼？",
-  "一個體系要如何容納真正的差異？",
-  "「根據」和「原因」的差別是否只是語詞差異，還是存在論差異？",
+type QuestionTemplate = (topic: string, companion: string) => string;
+
+type SentenceTemplate = (topic: string, companion: string) => string;
+
+function buildTextBank(
+  seed: string[],
+  targetCount: number,
+  topics: string[],
+  templates: Array<QuestionTemplate | SentenceTemplate>
+) {
+  const bank = [...seed];
+  let index = 0;
+
+  while (bank.length < targetCount) {
+    const topic = topics[index % topics.length];
+    const companion = topics[(index * 7 + 3) % topics.length];
+    const template = templates[index % templates.length];
+    const candidate = template(topic, companion);
+
+    if (!bank.includes(candidate)) {
+      bank.push(candidate);
+    }
+
+    index += 1;
+  }
+
+  return bank;
+}
+
+const philosophyTopics = [
+  "being",
+  "ground",
+  "freedom",
+  "necessity",
+  "difference",
+  "identity",
+  "negation",
+  "beginning",
+  "concept",
+  "system",
+  "cause",
+  "reason",
+  "appearance",
+  "essence",
+  "subjectivity",
+  "nature",
+  "spirit",
+  "time",
+  "truth",
+  "limit",
+  "contradiction",
+  "mediation",
+  "immediacy",
+  "actuality",
+  "possibility",
+  "finitude",
+  "infinity",
+  "relation",
+  "experience",
+  "language",
+  "history",
+  "desire",
+  "law",
+  "form",
+  "matter",
+  "unity",
+  "plurality",
+  "origin",
+  "becoming",
+  "nothingness",
 ];
 
-const sparkSentences = [
-  "真正的開始不是第一個東西，而是能夠解釋為何有開始的東西。",
-  "自由不是體系的外部，而是體系必須能說明的裂縫。",
-  "概念不是標籤，而是一種讓事物被理解的方式。",
-  "問題意識比答案更能顯示一個思想的方向。",
+const curatedSocraticQuestions = [
+  "Is the being you understand now a concrete thing, or anything that can be said to be?",
+  "If freedom is not arbitrary choice, what is it?",
+  "How can a system make room for genuine difference?",
+  "Is the difference between ground and cause only verbal, or ontological?",
+  "What must a beginning explain besides the fact that something came first?",
+  "When a concept clarifies something, what does it also hide?",
+  "Can contradiction be a failure of thought and also a motor of thought?",
+  "What would count as evidence that a philosophical distinction is necessary?",
+  "Does a limit merely stop thinking, or does it give thinking its shape?",
+  "If identity already contains relation, what happens to pure self-sameness?",
+  "What is lost when an experience is translated too quickly into a concept?",
+  "Can a ground remain hidden while still determining what appears?",
+  "What kind of freedom can exist inside necessity rather than outside it?",
+  "When does explanation become reduction?",
+  "Is a philosophical system strongest where it is complete, or where it can transform?",
+  "What makes a question philosophical rather than merely difficult?",
+  "Can something be intelligible without being fully transparent?",
+  "What does it mean for a concept to generate its own opposite?",
+  "If a text resists you, is the resistance in the text, in the concept, or in your expectation?",
+  "What is the difference between beginning from experience and grounding experience?",
+  "Can the same concept function differently in two thinkers without becoming a different concept?",
+  "What would it mean to understand freedom as a structure rather than a feeling?",
+  "When does difference become conflict?",
+  "Can a principle explain what escapes it?",
+  "What is the relation between a problem and the language that makes it visible?",
+  "If reason needs a ground, does that ground have to be rational?",
+  "Can a contradiction preserve truth rather than destroy it?",
+  "What kind of unity does not erase plurality?",
+  "When a philosopher defines something, what are they trying to protect from confusion?",
+  "What would change if you treated this passage as a map of tensions instead of a list of claims?",
 ];
+
+const socraticQuestionTemplates: QuestionTemplate[] = [
+  (topic) => `What does ${topic} explain that a simpler term would leave untouched?`,
+  (topic, companion) => `How would ${topic} change if it had to pass through ${companion}?`,
+  (topic) => `Where does ${topic} become more than a word in the text you are reading?`,
+  (topic, companion) => `Is the tension between ${topic} and ${companion} accidental, or does it carry the argument?`,
+  (topic) => `What would be misunderstood if ${topic} were treated as merely psychological?`,
+  (topic) => `What condition must hold before ${topic} can become thinkable?`,
+  (topic, companion) => `Does ${topic} limit ${companion}, or does it make ${companion} possible?`,
+  (topic) => `What kind of evidence would show that ${topic} is a structural concept?`,
+  (topic, companion) => `If ${topic} depends on ${companion}, what kind of dependence is it?`,
+  (topic) => `What remains unclear when you try to define ${topic} too quickly?`,
+  (topic, companion) => `Could ${topic} be the hidden problem behind ${companion}?`,
+  (topic) => `What does the text ask you to give up in order to understand ${topic}?`,
+  (topic, companion) => `Where does ${topic} resist being reduced to ${companion}?`,
+  (topic) => `What does ${topic} make visible that ordinary explanation tends to miss?`,
+  (topic, companion) => `Can ${topic} and ${companion} belong to one movement without becoming the same?`,
+];
+
+const socraticQuestions = buildTextBank(
+  curatedSocraticQuestions,
+  200,
+  philosophyTopics,
+  socraticQuestionTemplates
+);
+
+const curatedSparkSentences = [
+  "A true beginning is not the first thing, but what can explain why beginning is possible.",
+  "Freedom is not outside the system; it is the fracture the system must account for.",
+  "A concept is not a label, but a way for things to become intelligible.",
+  "A problem shows the direction of a thought more clearly than an answer does.",
+  "A ground is not yet an explanation unless it can show why something follows.",
+  "Difference becomes philosophical when it cannot be treated as a mere variation.",
+  "The hardest texts often preserve a question before they preserve a doctrine.",
+  "A system is tested by what it cannot easily absorb.",
+  "To name a concept is already to decide what kind of relation matters.",
+  "Sometimes the unclear sentence is the most honest record of thought beginning.",
+  "The limit of a concept is also part of its meaning.",
+  "A philosophical distinction matters when removing it makes the problem disappear too easily.",
+  "The obscure passage may be where the system is doing its most delicate work.",
+  "Ground is not background; it is the condition that lets something stand forth.",
+  "A contradiction can mark the place where thought has not yet learned its own movement.",
+  "Freedom becomes serious only when it has to answer to necessity.",
+  "A concept begins to live when it can survive contact with its opposite.",
+  "Interpretation is often the art of slowing down a sentence that looks obvious.",
+  "A system without remainder may be less complete than one that knows where it trembles.",
+  "The question of being is never only about what exists, but about how existence becomes sayable.",
+  "A thinker is often closest to their problem where their vocabulary becomes strained.",
+  "A definition does not close thought; it decides where thought must begin again.",
+  "What looks like a technical distinction may be the hinge of the whole argument.",
+  "The most productive confusion is the one that can name what it cannot yet solve.",
+  "A text becomes useful when it teaches you how to ask a better question of it.",
+  "Necessity is not the enemy of freedom if freedom is the power to belong otherwise.",
+  "A concept does not merely represent reality; it organizes the field in which reality can appear.",
+  "The relation between two terms can matter more than either term alone.",
+  "A philosophical answer is often a disciplined way of keeping the right question open.",
+  "The point of returning to a hard passage is not mastery, but renewed precision.",
+];
+
+const sparkSentenceTemplates: SentenceTemplate[] = [
+  (topic) => `${topic} becomes philosophical when it stops being obvious.`,
+  (topic, companion) => `${topic} is sharpened by the pressure of ${companion}.`,
+  (topic) => `A text thinks through ${topic} before it teaches a doctrine about it.`,
+  (topic, companion) => `${topic} and ${companion} become interesting where their border starts to move.`,
+  (topic) => `The meaning of ${topic} depends on the problem it is asked to solve.`,
+  (topic) => `${topic} is not only a term; it is a way of arranging a field of thought.`,
+  (topic, companion) => `${topic} can conceal ${companion} as much as it reveals it.`,
+  (topic) => `The difficulty of ${topic} may be the sign that the question is finally precise.`,
+  (topic, companion) => `A distinction between ${topic} and ${companion} matters only if it changes the argument.`,
+  (topic) => `To understand ${topic}, it may be necessary to notice what the text refuses to simplify.`,
+  (topic, companion) => `${topic} becomes unstable when ${companion} is no longer treated as secondary.`,
+  (topic) => `The first task is not to master ${topic}, but to locate why it becomes necessary.`,
+  (topic, companion) => `${topic} and ${companion} may name two sides of one unresolved movement.`,
+  (topic) => `The concept of ${topic} gains force when it explains a tension rather than naming a thing.`,
+  (topic, companion) => `${topic} is clearest where it cannot simply replace ${companion}.`,
+];
+
+const sparkSentences = buildTextBank(
+  curatedSparkSentences,
+  200,
+  philosophyTopics,
+  sparkSentenceTemplates
+);
 
 const reactionOptions: {
   label: string;
@@ -45,8 +219,33 @@ const reactionOptions: {
 
 const noBasisMessage = "目前文本資料庫中找不到明確文本依據。";
 
-function nextIndex(current: number, total: number) {
-  return (current + 1) % total;
+function createRandomBag(total: number, exclude?: number) {
+  const indexes = Array.from({ length: total }, (_, index) => index).filter(
+    (index) => index !== exclude
+  );
+
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [indexes[index], indexes[swapIndex]] = [indexes[swapIndex], indexes[index]];
+  }
+
+  return indexes;
+}
+
+function randomInitialIndex(total: number) {
+  return Math.floor(Math.random() * total);
+}
+
+function takeRandomFromBag(
+  current: number,
+  total: number,
+  bag: number[],
+  setBag: (nextBag: number[]) => void
+) {
+  const nextBag = bag.length > 0 ? [...bag] : createRandomBag(total, current);
+  const next = nextBag.shift() ?? current;
+  setBag(nextBag);
+  return next;
 }
 
 function makeQuestion(text: string) {
@@ -54,7 +253,7 @@ function makeQuestion(text: string) {
   if (!trimmed) return "";
   if (/[?？]$/.test(trimmed)) return trimmed;
 
-  return `What question is hidden in this thought: ${trimmed}`;
+  return `What question is hidden in this thought: ${trimmed}?`;
 }
 
 function entryModeLabel(mode: NightSparkMode) {
@@ -92,8 +291,18 @@ async function getAccessToken() {
 }
 
 export default function NightSparks() {
-  const [socraticIndex, setSocraticIndex] = useState(0);
-  const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [socraticIndex, setSocraticIndex] = useState(() =>
+    randomInitialIndex(socraticQuestions.length)
+  );
+  const [sentenceIndex, setSentenceIndex] = useState(() =>
+    randomInitialIndex(sparkSentences.length)
+  );
+  const [socraticBag, setSocraticBag] = useState<number[]>(() =>
+    createRandomBag(socraticQuestions.length, socraticIndex)
+  );
+  const [sentenceBag, setSentenceBag] = useState<number[]>(() =>
+    createRandomBag(sparkSentences.length, sentenceIndex)
+  );
   const [socraticAnswer, setSocraticAnswer] = useState("");
   const [reaction, setReaction] = useState<NightSparkReaction>(null);
   const [reactionNote, setReactionNote] = useState("");
@@ -107,48 +316,17 @@ export default function NightSparks() {
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkResponse, setLinkResponse] = useState<TextLinkSearchResponse | null>(null);
   const [visibleResultCount, setVisibleResultCount] = useState(5);
-  const [texts, setTexts] = useState<TextRecord[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadForm, setUploadForm] = useState({
-    title: "",
-    author: "",
-    translator: "",
-    language: "",
-  });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     getNightSparkEntries()
       .then(setRecentEntries)
       .catch(() => setRecentEntries([]));
-    loadTexts();
   }, []);
 
   const visibleResults = useMemo(
     () => (linkResponse?.results || []).slice(0, visibleResultCount),
     [linkResponse, visibleResultCount]
   );
-
-  async function loadTexts() {
-    const { data, error } = await supabase
-      .from("texts")
-      .select("*, text_chunks(count)")
-      .order("uploaded_at", { ascending: false });
-
-    if (error) {
-      setTexts([]);
-      return;
-    }
-
-    setTexts(
-      (data || []).map((item) => ({
-        ...(item as TextRecord),
-        chunk_count: Array.isArray(item.text_chunks)
-          ? item.text_chunks[0]?.count ?? 0
-          : 0,
-      }))
-    );
-  }
 
   async function saveEntry(input: {
     mode: NightSparkMode;
@@ -314,70 +492,6 @@ export default function NightSparks() {
     window.setTimeout(() => setFeedback(""), 2600);
   }
 
-  async function uploadText() {
-    if (!selectedFile) {
-      setFeedback("Choose a PDF first.");
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      const token = await getAccessToken();
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("title", uploadForm.title);
-      formData.append("author", uploadForm.author);
-      formData.append("translator", uploadForm.translator);
-      formData.append("language", uploadForm.language);
-
-      const response = await fetch("/api/text-database/upload", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const body = await response.json();
-
-      if (!response.ok) throw new Error(body.error || "Upload failed.");
-
-      setFeedback(
-        body.status === "completed"
-          ? "Text imported into the database."
-          : body.reason || "Text upload finished."
-      );
-      setSelectedFile(null);
-      setUploadForm({ title: "", author: "", translator: "", language: "" });
-      await loadTexts();
-    } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-      window.setTimeout(() => setFeedback(""), 3200);
-    }
-  }
-
-  async function reprocessText(id: string) {
-    const token = await getAccessToken();
-    const response = await fetch(`/api/text-database/texts/${id}/reprocess`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "Reprocess failed.");
-    await loadTexts();
-  }
-
-  async function deleteText(id: string) {
-    const token = await getAccessToken();
-    const response = await fetch(`/api/text-database/texts/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "Delete failed.");
-    await loadTexts();
-  }
-
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 text-neutral-950 shadow-sm sm:p-8">
@@ -418,7 +532,17 @@ export default function NightSparks() {
             />
 
             <div className="mt-auto flex flex-wrap justify-end gap-2 pt-5">
-              <button type="button" onClick={() => { setSocraticIndex((current) => nextIndex(current, socraticQuestions.length)); setSocraticAnswer(""); }} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50">
+              <button type="button" onClick={() => {
+                  setSocraticIndex((current) =>
+                    takeRandomFromBag(
+                      current,
+                      socraticQuestions.length,
+                      socraticBag,
+                      setSocraticBag
+                    )
+                  );
+                  setSocraticAnswer("");
+                }} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50">
                 Next Question
               </button>
               <button type="button" onClick={saveSocratic} disabled={saving} className="rounded-lg border border-neutral-950 bg-neutral-950 px-3 py-2 text-sm font-bold text-white hover:bg-neutral-800 disabled:opacity-50">
@@ -450,7 +574,18 @@ export default function NightSparks() {
             ) : null}
 
             <div className="mt-auto flex flex-wrap justify-end gap-2 pt-5">
-              <button type="button" onClick={() => { setSentenceIndex((current) => nextIndex(current, sparkSentences.length)); setReaction(null); setReactionNote(""); }} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50">
+              <button type="button" onClick={() => {
+                  setSentenceIndex((current) =>
+                    takeRandomFromBag(
+                      current,
+                      sparkSentences.length,
+                      sentenceBag,
+                      setSentenceBag
+                    )
+                  );
+                  setReaction(null);
+                  setReactionNote("");
+                }} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50">
                 Next Sentence
               </button>
               <button type="button" onClick={saveSentence} disabled={saving} className="rounded-lg border border-neutral-950 bg-neutral-950 px-3 py-2 text-sm font-bold text-white hover:bg-neutral-800 disabled:opacity-50">
@@ -506,7 +641,7 @@ export default function NightSparks() {
               Answers below are retrieved context, not general AI knowledge. If no completed text chunk supports the query, the system says so directly.
             </p>
           </div>
-          {linkResponse ? <p className="text-sm text-neutral-500">找到的文本數量: {linkResponse.found_count}</p> : null}
+          {linkResponse ? <p className="text-sm text-neutral-500">Found texts: {linkResponse.found_count}</p> : null}
         </div>
 
         {linkResponse?.fallback_message ? (
@@ -520,7 +655,7 @@ export default function NightSparks() {
             {visibleResults.map((result) => (
               <article key={result.chunk_id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">相關度: {result.relevance}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">Relevance: {result.relevance}</p>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => saveTextLinkResult(result)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50">保存</button>
                     <button type="button" onClick={() => addConceptFromResult(result)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50">加入概念詞典</button>
@@ -528,16 +663,16 @@ export default function NightSparks() {
                   </div>
                 </div>
                 <dl className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                  <div><dt className="font-bold">作者</dt><dd className="text-neutral-600">{result.author || "Unknown"}</dd></div>
-                  <div><dt className="font-bold">書名</dt><dd className="text-neutral-600">{result.title}</dd></div>
-                  <div><dt className="font-bold">位置</dt><dd className="text-neutral-600">{locationLabel(result)}</dd></div>
+                  <div><dt className="font-bold">Author</dt><dd className="text-neutral-600">{result.author || "Unknown"}</dd></div>
+                  <div><dt className="font-bold">Title</dt><dd className="text-neutral-600">{result.title}</dd></div>
+                  <div><dt className="font-bold">Location</dt><dd className="text-neutral-600">{locationLabel(result)}</dd></div>
                   <div><dt className="font-bold">Match Type</dt><dd className="text-neutral-600">{result.match_type}</dd></div>
                 </dl>
                 <div className="mt-4 rounded-lg bg-white p-4 text-sm leading-7 text-neutral-700">
-                  <p className="font-bold text-neutral-950">原文片段</p>
+                  <p className="font-bold text-neutral-950">Original Passage</p>
                   <p className="mt-2">{excerpt(result.chunk_text)}</p>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-neutral-600"><span className="font-bold text-neutral-950">關聯說明: </span>{result.why_relevant}</p>
+                <p className="mt-3 text-sm leading-6 text-neutral-600"><span className="font-bold text-neutral-950">Why relevant: </span>{result.why_relevant}</p>
               </article>
             ))}
             {linkResponse && linkResponse.results.length > visibleResultCount ? (
@@ -547,65 +682,25 @@ export default function NightSparks() {
         ) : null}
       </section>
 
-      <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-        <div>
-          <h2 className="text-xl font-bold">文本資料庫</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-500">
-            你可以在這裡上傳自己的哲學文本 PDF。文本連結功能只會根據這些已匯入的文本回答，不會憑空補充資料庫中不存在的哲學家或著作。
-          </p>
-        </div>
-
-        <div className="mt-5 grid gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 md:grid-cols-2">
-          <div className="space-y-3">
-            <input type="file" accept="application/pdf,.pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} className="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input value={uploadForm.title} onChange={(event) => setUploadForm({ ...uploadForm, title: event.target.value })} placeholder="Title" className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" />
-              <input value={uploadForm.author} onChange={(event) => setUploadForm({ ...uploadForm, author: event.target.value })} placeholder="Author" className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" />
-              <input value={uploadForm.translator} onChange={(event) => setUploadForm({ ...uploadForm, translator: event.target.value })} placeholder="Translator" className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" />
-              <input value={uploadForm.language} onChange={(event) => setUploadForm({ ...uploadForm, language: event.target.value })} placeholder="Language" className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" />
-            </div>
-            <button type="button" onClick={uploadText} disabled={uploading} className="rounded-lg border border-neutral-950 bg-neutral-950 px-4 py-2 text-sm font-bold text-white hover:bg-neutral-800 disabled:opacity-50">
-              {uploading ? "Processing..." : "Upload PDF"}
-            </button>
+      <Link
+        href="/night-sparks/text-database"
+        className="mt-8 block rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-950 sm:p-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-neutral-400">
+              Private Text Archive
+            </p>
+            <h2 className="mt-2 text-xl font-bold">Text Database</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-500">
+              Open the full database page to upload PDFs, search by title or author, review ingestion status, and manage imported texts.
+            </p>
           </div>
-          <div className="rounded-lg bg-white p-4 text-sm leading-6 text-neutral-600">
-            <p className="font-bold text-neutral-950">Backend folder import</p>
-            <p className="mt-2">Place PDFs in <code>backend-import/texts/</code>, then run <code>npm run ingest-texts</code>. Web uploads and folder imports use the same ingestion pipeline.</p>
-          </div>
+          <span className="rounded-lg border border-neutral-950 bg-neutral-950 px-4 py-2 text-sm font-bold text-white">
+            Open Database
+          </span>
         </div>
-
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.16em] text-neutral-400">
-              <tr>
-                <th className="border-b border-neutral-200 px-3 py-2">Title</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Author</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Translator</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Language</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Uploaded</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Status</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Chunks</th>
-                <th className="border-b border-neutral-200 px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {texts.map((text) => (
-                <tr key={text.id} className="align-top">
-                  <td className="border-b border-neutral-100 px-3 py-3 font-medium">{text.title}<p className="mt-1 text-xs text-neutral-400">{text.file_name}</p>{text.ingestion_error ? <p className="mt-1 text-xs text-red-600">{text.ingestion_error}</p> : null}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{text.author || "-"}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{text.translator || "-"}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{text.language || "-"}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{new Date(text.uploaded_at).toLocaleString()}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{text.ingestion_status}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3 text-neutral-600">{text.chunk_count ?? 0}</td>
-                  <td className="border-b border-neutral-100 px-3 py-3"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => reprocessText(text.id).catch((error) => setFeedback(error.message))} className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Reprocess</button><button type="button" onClick={() => deleteText(text.id).catch((error) => setFeedback(error.message))} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50">Delete</button></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {texts.length === 0 ? <p className="rounded-xl border border-dashed border-neutral-300 p-5 text-sm text-neutral-500">No texts uploaded yet.</p> : null}
-        </div>
-      </section>
+      </Link>
 
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
