@@ -31,22 +31,24 @@ function buildTextBank(
   templates: Array<QuestionTemplate | SentenceTemplate>
 ) {
   const bank = [...seed];
-  let index = 0;
 
-  while (bank.length < targetCount) {
-    const topic = topics[index % topics.length];
-    const companion = topics[(index * 7 + 3) % topics.length];
-    const template = templates[index % templates.length];
-    const candidate = template(topic, companion);
+  for (const template of templates) {
+    for (const topic of topics) {
+      for (const companion of topics) {
+        const candidate = template(topic, companion);
 
-    if (!bank.includes(candidate)) {
-      bank.push(candidate);
+        if (!bank.includes(candidate)) {
+          bank.push(candidate);
+        }
+
+        if (bank.length >= targetCount) {
+          return bank;
+        }
+      }
     }
-
-    index += 1;
   }
 
-  return bank;
+  return bank.slice(0, targetCount);
 }
 
 const philosophyTopics = [
@@ -732,3 +734,4 @@ export default function NightSparks() {
     </main>
   );
 }
+
