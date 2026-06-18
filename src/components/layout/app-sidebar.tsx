@@ -170,7 +170,7 @@ export function AppSidebar({
                   Deutsch
                 </SidebarNavLink>
                 <SidebarNavLink href="/languages/ru" onNavigate={onNavigate}>
-                  ????郕邽邿
+                  Русский
                 </SidebarNavLink>
               </div>
             </section>
