@@ -130,6 +130,9 @@ export function AppSidebar({
                 <SidebarNavLink href="/progress" onNavigate={onNavigate}>
                   Learning Progress
                 </SidebarNavLink>
+                <SidebarNavLink href="/fitness" onNavigate={onNavigate}>
+                  Fitness
+                </SidebarNavLink>
                 <SidebarNavLink href="/review" onNavigate={onNavigate}>
                   Review
                 </SidebarNavLink>
@@ -162,6 +165,12 @@ export function AppSidebar({
                 </SidebarNavLink>
                 <SidebarNavLink href="/articles" onNavigate={onNavigate}>
                   Articles
+                </SidebarNavLink>
+                <SidebarNavLink href="/languages/ja" onNavigate={onNavigate}>
+                  Japanese
+                </SidebarNavLink>
+                <SidebarNavLink href="/language-comparison" onNavigate={onNavigate}>
+                  Language Comparison
                 </SidebarNavLink>
                 <SidebarNavLink href="/languages/en" onNavigate={onNavigate}>
                   English

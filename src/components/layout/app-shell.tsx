@@ -16,11 +16,13 @@ const privateRoutePrefixes = [
   "/philosophy",
   "/review",
   "/daily-log",
+  "/fitness",
   "/night-sparks",
   "/vocabulary",
   "/sentences",
   "/articles",
   "/languages",
+  "/language-comparison",
   "/settings",
   "/admin",
 ];
