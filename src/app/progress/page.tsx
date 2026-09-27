@@ -1,5 +1,2 @@
-import LearningProgress from "../../components/LearningProgress";
-
-export default function ProgressPage() {
-    return <LearningProgress />;
-}
+import {redirect} from "next/navigation";
+export default function LegacyPage(){redirect("/record/progress");}

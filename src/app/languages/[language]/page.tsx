@@ -1,64 +1,15 @@
-const languageMap: Record<
-  string,
-  {
-    title: string;
-    level: string;
-    explanation: string;
-  }
-> = {
-  en: {
-    title: "English",
-    level: "C1",
-    explanation: "Explanations are mainly in Traditional Chinese.",
-  },
-  de: {
-    title: "Deutsch",
-    level: "A1",
-    explanation: "Sentence explanations are in English.",
-  },
-  ru: {
-    title: "Русский",
-    level: "Beginner",
-    explanation: "Explanations are mainly in Traditional Chinese.",
-  },
-};
-
-export default async function LanguageOverviewPage({
-  params,
-}: {
-  params: Promise<{ language: string }>;
-}) {
-  const { language: languageCode } = await params;
-  const language = languageMap[languageCode] ?? languageMap.en;
-
-  return (
-    <div className="space-y-8">
-      <section>
-        <p className="text-sm text-neutral-500">Language</p>
-
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-          {language.title}
-        </h2>
-
-        <p className="mt-3 text-neutral-600">
-          Level: {language.level}. {language.explanation}
-        </p>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-4">
-        {["Vocabulary", "Grammar", "Sentences", "Articles"].map((item) => (
-          <div
-            key={item}
-            className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5"
-          >
-            <h3 className="font-semibold text-neutral-950">{item}</h3>
-
-            <p className="mt-2 text-sm text-neutral-600">
-              This module will be connected to Supabase and AI tools later.
-            </p>
-          </div>
-        ))}
-      </section>
-    </div>
-  );
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { isLanguageCode, languages } from "@/lib/languages/config";
+import {ContinueLink} from "@/components/languages/language-continue";
+export default async function Overview({ params }: { params: Promise<{ language: string }> }) {
+  const { language } = await params;
+  if (!isLanguageCode(language)) notFound();
+  const config = languages[language];
+  return <div className="space-y-6"><h1 className="text-3xl font-semibold">{config.name}</h1>
+    <div className="grid gap-3 sm:grid-cols-2">{config.modules.map((module) => <Link className="language-surface rounded-xl border border-neutral-200 p-5 text-lg capitalize hover:bg-white/95" key={module} href={`${config.route}/${module}`}>{module==="grammar-tables"?"Grammar Tables":module}</Link>)}</div>
+    <ContinueLink language={language}/>
+    <Link className="inline-flex min-h-11 items-center text-sm underline" href={`${config.route}/concepts`}>Concepts</Link>
+    {language === "ja" ? <div className="flex flex-wrap gap-3">{["kana", "analysis", "anki"].map((tool) => <Link key={tool} className="rounded-lg border px-4 py-3 capitalize" href={`${config.route}/${tool}`}>{tool === "kana" ? "Kana practice" : tool === "analysis" ? "Sentence analysis" : "Anki drafts"}</Link>)}</div> : null}
+  </div>;
 }

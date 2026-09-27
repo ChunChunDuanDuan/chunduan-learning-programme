@@ -15,9 +15,10 @@ type RandomSentenceResult = {
     english: string;
     german: string;
     russian: string;
+    japanese: string;
 };
 
-type NormalisedLanguage = "English" | "Deutsch" | "Русский";
+type NormalisedLanguage = "English" | "Deutsch" | "Русский" | "日本語";
 
 function getApiKey() {
     return process.env.OPENAI_API_KEY?.trim();
@@ -32,6 +33,10 @@ function normaliseLanguage(language: string): NormalisedLanguage {
 
     if (value === "русский" || value === "russian" || value === "ru") {
         return "Русский";
+    }
+
+    if (value === "日本語" || value === "japanese" || value === "ja") {
+        return "日本語";
     }
 
     return "English";
@@ -69,6 +74,7 @@ function normaliseResult(raw: Partial<RandomSentenceResult>): RandomSentenceResu
         english: toStringValue(raw.english),
         german: toStringValue(raw.german),
         russian: toStringValue(raw.russian),
+        japanese: toStringValue(raw.japanese),
     };
 }
 
@@ -80,6 +86,10 @@ function hasCyrillic(text: string) {
     return /[\u0400-\u04FF]/.test(text);
 }
 
+function hasJapaneseScript(text: string) {
+    return /[\u3040-\u30ff\u3400-\u9fff]/.test(text);
+}
+
 function cleanExplanation(explanation: string) {
     return explanation
         .replace(/^English:\s*/gim, "")
@@ -87,6 +97,8 @@ function cleanExplanation(explanation: string) {
         .replace(/^German:\s*/gim, "")
         .replace(/^Русский:\s*/gim, "")
         .replace(/^Russian:\s*/gim, "")
+        .replace(/^日本語:\s*/gim, "")
+        .replace(/^Japanese:\s*/gim, "")
         .replace(/^英文:\s*/gim, "")
         .replace(/^德文:\s*/gim, "")
         .replace(/^俄文:\s*/gim, "")
@@ -109,7 +121,8 @@ JSON shape:
   "notes": "string",
   "english": "string",
   "german": "string",
-  "russian": "string"
+  "russian": "string",
+  "japanese": "string"
 }
 
 Generate ONE random German sentence for an A1 learner.
@@ -216,6 +229,61 @@ Example:
 `;
     }
 
+    if (language === "日本語") {
+        return `
+Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+
+JSON shape:
+{
+  "chinese": "string",
+  "target_sentence": "string",
+  "translation_zh": "string",
+  "explanation": "string",
+  "notes": "string",
+  "english": "string",
+  "german": "string",
+  "russian": "string",
+  "japanese": "string"
+}
+
+Generate ONE random Japanese sentence for a beginner learner.
+
+Content rules:
+- The sentence must be useful in everyday life and sound natural.
+- Prefer common situations such as shopping, studying, eating, going out, asking for help, making plans, or expressing simple feelings.
+- Keep it short and practical.
+
+Language rules:
+- target_sentence MUST be natural Japanese using Japanese script.
+- japanese must contain the same Japanese sentence.
+- english, german, and russian must be empty strings.
+- chinese and translation_zh must both be the Traditional Chinese meaning.
+
+Explanation rules:
+- explanation must explain the Japanese sentence word by word in Traditional Chinese and include kana readings for kanji words.
+- Do not include labels like "日本語:" or "Japanese:".
+
+Notes:
+- notes must be Traditional Chinese.
+- notes should briefly explain useful beginner grammar or natural usage.
+
+Example:
+{
+  "chinese": "我想買一杯咖啡。",
+  "target_sentence": "コーヒーを一杯買いたいです。",
+  "translation_zh": "我想買一杯咖啡。",
+  "explanation": "コーヒー: 咖啡\\n一杯（いっぱい）: 一杯\\n買いたい（かいたい）: 想買\\nです: 禮貌語尾",
+  "notes": "動詞連用形加「たい」表示想做某事。",
+  "english": "",
+  "german": "",
+  "russian": "",
+  "japanese": "コーヒーを一杯買いたいです。"
+}
+`;
+    }
+
     return `
 Return ONLY valid JSON.
 Do not use markdown.
@@ -283,10 +351,11 @@ JSON shape:
   "notes": "string",
   "english": "string",
   "german": "string",
-  "russian": "string"
+  "russian": "string",
+  "japanese": "string"
 }
 
-Generate ONE random everyday-life Chinese sentence, then translate it into English, German, and Russian.
+Generate ONE random everyday-life Chinese sentence, then translate it into English, German, Russian, and Japanese.
 
 Content rules:
 - The Chinese sentence must be useful in everyday daily life.
@@ -301,11 +370,12 @@ Language rules:
 - english must be natural English.
 - german must be simple German suitable for A1 learners.
 - russian must be simple Russian using Cyrillic script.
+- japanese must be natural beginner Japanese using Japanese script.
 - target_sentence should be the English sentence.
 
 Explanation rules:
 - Do not explain English.
-- explanation should include German word-by-word meanings in English and Russian word-by-word meanings in Traditional Chinese.
+- explanation should include German word-by-word meanings in English, plus Russian and Japanese word-by-word meanings in Traditional Chinese.
 - Use this format exactly:
 
 Deutsch:
@@ -315,6 +385,10 @@ German word: English meaning
 Русский:
 Russian word: Traditional Chinese meaning
 Russian word: Traditional Chinese meaning
+
+日本語:
+Japanese word (reading): Traditional Chinese meaning
+Japanese word (reading): Traditional Chinese meaning
 
 Notes:
 - notes must be Traditional Chinese.
@@ -329,7 +403,8 @@ Example:
   "notes": "這三句都很適合日常使用。德文 möchte 是比較禮貌的「想要」，俄文 хочу 後面接動詞原形。",
   "english": "I want to buy a cup of coffee.",
   "german": "Ich möchte einen Kaffee kaufen.",
-  "russian": "Я хочу купить кофе."
+  "russian": "Я хочу купить кофе.",
+  "japanese": "コーヒーを一杯買いたいです。"
 }
 `;
 }
@@ -406,18 +481,28 @@ export async function POST(request: Request) {
                 result.english = result.target_sentence;
                 result.german = "";
                 result.russian = "";
+                result.japanese = "";
             }
 
             if (language === "Deutsch") {
                 result.german = result.target_sentence;
                 result.english = "";
                 result.russian = "";
+                result.japanese = "";
             }
 
             if (language === "Русский") {
                 result.russian = result.target_sentence;
                 result.english = "";
                 result.german = "";
+                result.japanese = "";
+            }
+
+            if (language === "日本語") {
+                result.japanese = result.target_sentence;
+                result.english = "";
+                result.german = "";
+                result.russian = "";
             }
         }
 
@@ -442,12 +527,37 @@ export async function POST(request: Request) {
             }
         }
 
+        if (language === "日本語" && mode === "single") {
+            if (!hasJapaneseScript(result.target_sentence)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "The AI returned a non-Japanese target sentence. Please press Generate random sentence again.",
+                        raw: result,
+                    },
+                    { status: 500 }
+                );
+            }
+        }
+
         if (mode === "all") {
             if (!hasCyrillic(result.russian) || hasLatin(result.russian)) {
                 return NextResponse.json(
                     {
                         error:
                             "The AI returned a non-Russian sentence in the all-language result. Please press Generate random sentence again.",
+                        raw: result,
+                    },
+                    { status: 500 }
+                );
+            }
+
+
+            if (!hasJapaneseScript(result.japanese)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "The AI returned a non-Japanese sentence in the all-language result. Please press Generate random sentence again.",
                         raw: result,
                     },
                     { status: 500 }

@@ -1,0 +1,1852 @@
+我要把目前的 Learning Programme 網站進行一次大型資訊架構重構。
+
+這次改版稱為：
+
+Learning Programme 2.0 — Phase 1
+
+請直接在目前 repo 中工作。這是一個既有專案，不要重建新專案。
+
+==================================================
+0. 開始前：先閱讀並理解現有專案
+==================================================
+
+在修改任何程式之前，先完整檢查目前 repo：
+
+- app router 結構
+- components
+- lib
+- types
+- data persistence / database / local storage 等現有資料儲存方式
+- authentication
+- PWA / manifest / metadata
+- responsive layout
+- vocabulary / sentences / articles / language-comparison 現有資料模型
+- philosophy
+- fitness
+- schedule
+- progress
+- daily-log
+- login redirect
+- 所有跨頁面連結
+
+目前 app 目錄大致包含：
+
+app/
+  admin/
+  api/
+  articles/
+  blog/
+  daily-log/
+  dashboard/
+  fitness/
+  language-comparison/
+  languages/
+    [language]/
+    de/
+    en/
+    ja/
+    ru/
+  login/
+  night-sparks/
+  philosophy/
+    concepts/
+    outputs/
+    questions/
+    texts/
+  progress/
+  review/
+  schedule/
+  sentences/
+  settings/
+  vocabulary/
+  page.tsx
+
+注意：
+這只是目前結構的概覽。
+請以 repo 實際內容為準。
+
+不要因為本指令與現有 implementation 細節不同，就直接大量重寫。
+先理解現況，再採取「最低風險 migration」。
+
+完成 inspection 後直接開始實作，不需要先停下來問我。
+
+==================================================
+1. Phase 1 的核心目標
+==================================================
+
+這次要解決的核心問題是：
+
+目前所有功能都透過同一個 sidebar 導航，導致 Languages、Philosophy、Fitness、Record 等完全不同的工作 context 隨時可以互相切換。
+
+我要把網站改成：
+
+「彼此隔離的工作環境」
+
+核心原則：
+
+Navigation follows context, not capability.
+
+也就是：
+
+不要再把 Vocabulary / Sentences / Articles / Schedule 等功能全部放在全站 navigation。
+
+而是先進入某個 context：
+
+- Languages
+- Philosophy
+- Fitness
+- Record
+
+再顯示該 context 內的功能。
+
+==================================================
+2. 最上層網站架構
+==================================================
+
+新的主架構：
+
+/
+├── languages
+├── philosophy
+├── fitness
+└── record
+
+首頁 `/` 必須改成「極簡入口頁」。
+
+首頁只需要提供四個大型入口：
+
+- Languages
+- Philosophy
+- Fitness
+- Record
+
+不要在首頁加入：
+
+- Dashboard
+- 今日任務
+- streak
+- notification
+- learning progress
+- recent activity
+- search
+- statistics
+- 待完成項目
+- sidebar
+- 其他 distracting information
+
+這一版首頁的目的只有：
+
+選擇要進入哪一個 environment。
+
+==================================================
+3. 完全取消全站 sidebar
+==================================================
+
+移除目前作為全站 navigation 的 sidebar。
+
+進入以下任何區域後：
+
+/languages
+/philosophy
+/fitness
+/record
+
+UI 中都不能出現：
+
+- 回首頁按鈕
+- Learning Programme logo → home 的連結
+- 其他三大區入口
+- 全站 sidebar
+- app switcher
+- global navigation menu
+
+例如：
+
+進入 `/philosophy` 後，不應該看到：
+
+Languages
+Fitness
+Record
+Home
+
+使用者如果要離開目前 environment，只能透過：
+
+- browser back
+- URL
+- iPad/iPhone 主畫面的其他 PWA shortcut
+
+但：
+
+「原本內容本身有意義的跨功能資料關聯」不要因為移除 navigation 而刪除。
+
+==================================================
+4. Phase 1 的 scope 邊界
+==================================================
+
+非常重要：
+
+這一版只有 Languages 要進行完整內部重構。
+
+以下區域：
+
+- Philosophy
+- Fitness
+- Record
+
+這次只改：
+
+- 進入方式
+- top-level routing
+- 移除 global sidebar
+- 必要 route relocation / redirect
+- PWA entry
+- layout isolation
+
+不要重新設計它們的內部功能。
+
+尤其不要在這一版新增：
+
+Philosophy：
+- Thinkers
+- Works
+- Reading Records
+- 新的 knowledge graph
+- 新的 output system
+
+Fitness：
+- 新 dashboard
+- 新 food log layout
+- 新 weight chart
+- 55–65 kg 圖表修改
+
+Record：
+- 新 schedule UI
+- 新 progress UI
+- 新 daily log UI
+
+這些全部留到 Phase 2 或之後。
+
+如果 relocation 需要 wrapper/layout，可以改 layout；
+但請盡量保持現有內部功能與資料行為不變。
+
+==================================================
+5. Record 路由
+==================================================
+
+建立：
+
+/record
+
+並把：
+
+/schedule
+/progress
+/daily-log
+
+移入：
+
+/record/schedule
+/record/progress
+/record/daily-log
+
+Record 內部仍可讓：
+
+Schedule
+Progress
+Daily Log
+
+彼此切換。
+
+不要使用 sidebar。
+
+可以使用現有 UI 或簡單的 local navigation。
+
+舊 route 必須暫時保留 redirect：
+
+/schedule
+→ /record/schedule
+
+/progress
+→ /record/progress
+
+/daily-log
+→ /record/daily-log
+
+不要刪除舊資料。
+
+==================================================
+6. Languages 2.0 — 新 IA
+==================================================
+
+Languages 是這一版主要重構對象。
+
+建立以下結構：
+
+/languages
+├── en
+├── de
+├── ru
+├── ja
+├── grc
+├── la
+└── cross-language
+
+語言清單固定為：
+
+- English
+- German
+- Russian
+- Japanese
+- Ancient Greek
+- Latin
+
+route code：
+
+English       = en
+German        = de
+Russian       = ru
+Japanese      = ja
+Ancient Greek = grc
+Latin         = la
+
+不要使用 `el` 代表 Ancient Greek。
+
+==================================================
+7. Languages 首頁
+==================================================
+
+`/languages` 也是一個極簡入口頁。
+
+六種語言放在同一區：
+
+English
+German
+Russian
+Japanese
+Ancient Greek
+Latin
+
+Cross-language 必須視覺與結構上分開。
+
+也就是概念上：
+
+LANGUAGES
+
+[ English ]
+[ German ]
+[ Russian ]
+[ Japanese ]
+[ Ancient Greek ]
+[ Latin ]
+
+
+CROSS-LANGUAGE
+
+[ Cross-language ]
+
+Cross-language 不是「第七種語言」。
+
+Languages 首頁不要加入：
+
+- 全語言搜尋
+- 最近資料 feed
+- dashboard
+- streak
+- notification
+
+==================================================
+8. 每個單語言環境
+==================================================
+
+例如：
+
+/languages/de
+
+進入 German 後，只能看到 German 相關內容。
+
+不能看到：
+
+- English
+- Russian
+- Japanese
+- Ancient Greek
+- Latin
+
+也不能有語言切換 navigation。
+
+每個語言頁需要自己的 local navigation。
+
+先採用以下共同核心：
+
+Overview
+Vocabulary
+Sentences
+Texts
+Grammar
+
+建議 route：
+
+/languages/de
+/languages/de/vocabulary
+/languages/de/sentences
+/languages/de/texts
+/languages/de/grammar
+
+其他語言同樣。
+
+不要用 sidebar。
+
+優先使用適合 iPad 橫向的：
+
+- top navigation
+- horizontal tabs
+- toolbar
+
+同時必須在 iPhone 上正常 responsive。
+
+==================================================
+9. 單語言首頁
+==================================================
+
+每種語言必須有自己的 Overview。
+
+例如：
+
+/languages/de
+
+不要直接 redirect 到 vocabulary。
+
+Overview 可以顯示：
+
+- 語言名稱
+- 該語言功能入口
+- visual placeholder
+- Continue where you left off
+
+但不要做成複雜 dashboard。
+
+`Continue where you left off` 是次要功能。
+
+PWA / Languages 首頁點進 German 時：
+
+永遠先進：
+
+/languages/de
+
+不要自動 deep-link 到上一次頁面。
+
+但可以在 `/languages/de` 內提供：
+
+Continue where you left off
+
+==================================================
+10. 單語言搜尋規則
+==================================================
+
+單語言 environment 可以搜尋。
+
+例如：
+
+German search
+
+只能搜尋 German 資料。
+
+Ancient Greek search
+
+只能搜尋 Ancient Greek 資料。
+
+不能在任何單語言區搜尋其他語言。
+
+只有：
+
+/languages/cross-language
+
+可以進行跨語言搜尋。
+
+==================================================
+11. 舊 vocabulary / sentences / articles 重構
+==================================================
+
+目前：
+
+/vocabulary
+/sentences
+/articles
+
+屬於全語言混合視角。
+
+Phase 1 要逐步改成 language-scoped routes：
+
+例如：
+
+/languages/de/vocabulary
+/languages/de/sentences
+/languages/de/texts
+
+不要再讓 `/vocabulary` 成為正式 primary UI。
+
+舊 route 暫時 redirect：
+
+/vocabulary
+→ /languages
+
+/sentences
+→ /languages
+
+/articles
+→ /languages
+
+因為舊 route 沒有足夠資訊判斷要進哪個語言。
+
+不要刪除原資料。
+
+==================================================
+12. Articles → Texts
+==================================================
+
+Languages 裡不再使用 Article 作為一級功能名稱。
+
+統一改成：
+
+Texts
+
+也就是：
+
+Article
+Literature
+Textbook passage
+Dialogue
+News
+Philosophy text
+etc.
+
+都屬於 Text。
+
+每篇 Text 必須支援：
+
+- language
+- title
+- body / content
+- type
+- custom type
+- metadata
+- notes
+- related sentences
+- related vocabulary
+
+Text type：
+
+提供預設分類，例如：
+
+- Article
+- Literature
+- Textbook
+- Dialogue
+- News
+- Philosophy
+- Other
+
+但也必須允許自訂 type。
+
+如果現有 Article model 能安全 migration，請 migration。
+
+不要粗暴刪除既有 article data。
+
+==================================================
+13. Sentence ↔ Text 關係
+==================================================
+
+Sentence 可以有 source Text。
+
+也就是：
+
+Sentence
+→ source Text
+
+未來使用者可以從某篇 Text 中把一句話存成 Sentence。
+
+即使目前 UI 還沒有完整「選取文字 → 新增 Sentence」功能，
+data model 也要先支援：
+
+sourceTextId
+
+或等價 relational model。
+
+不要複製整篇 Text。
+
+==================================================
+14. Vocabulary ↔ Text 關係
+==================================================
+
+Vocabulary entry 必須可以與 Text 建立來源／出現關係。
+
+例如：
+
+Ancient Greek vocabulary:
+
+ναυμαχέω
+
+可以知道它在哪些 Text 中出現過。
+
+資料模型要能支援：
+
+VocabularyEntry
+↔ Text
+
+最好是 many-to-many / occurrences model，
+而不是只存單一 `sourceTextId`。
+
+如果現有 storage 不適合 relational structure，
+請依現有 architecture 採最合理且 backward-compatible 的方法。
+
+==================================================
+15. Vocabulary 2.0 資料模型
+==================================================
+
+Vocabulary 不再只是：
+
+word
+translation
+
+要改成：
+
+Shared fields
++
+Language-specific fields
++
+Part-of-speech-specific fields
+
+概念：
+
+VocabularyEntry
+├── id
+├── language
+├── lemma
+├── meanings
+├── partOfSpeech
+├── notes
+├── tags
+├── shared metadata
+└── language-specific metadata
+
+UI 上：
+
+先選 language / 已知 language context
+再選 part of speech
+
+表單依據：
+
+language
++
+part of speech
+
+動態顯示適當欄位。
+
+不要為六種語言建立六套完全獨立、彼此無關的 vocabulary system。
+
+==================================================
+16. Vocabulary — Ancient Greek
+==================================================
+
+Ancient Greek 至少要能結構化支援：
+
+共同：
+- lemma
+- meanings
+- part of speech
+- notes
+- tags
+
+noun：
+- nominative
+- genitive
+- article
+- gender
+- declension / noun class
+
+adjective：
+- dictionary forms
+- adjective class
+
+verb：
+- lemma
+- principal parts
+- verb class
+
+其他詞類可以保留 generic fields。
+
+不要在這一版實作完整：
+
+- automatic declension generator
+- automatic conjugation generator
+
+但資料模型必須讓未來可以加入。
+
+==================================================
+17. Ancient Greek Unicode / search normalization
+==================================================
+
+資料庫／storage 中必須保存原始正確 polytonic Greek。
+
+例如：
+
+ἄνθρωπος
+
+不能把資料本身轉成：
+
+ανθρωπος
+
+但是搜尋需要建立 normalized search representation。
+
+預設搜尋要能讓：
+
+ανθρωπος
+
+找到：
+
+ἄνθρωπος
+
+normalization 至少考慮：
+
+- Unicode NFC/NFD differences
+- acute
+- grave
+- circumflex
+- smooth breathing
+- rough breathing
+- iota subscript
+
+預設搜尋可以忽略這些 diacritics。
+
+UI 顯示永遠使用原始正字法。
+
+如果 architecture 合適，
+可以保留 exact search 能力，
+但不是 Phase 1 的必要 UI。
+
+請把 normalization 寫成獨立 utility，
+不要散落在 component 裡。
+
+==================================================
+18. Vocabulary — Latin
+==================================================
+
+Latin 至少支援：
+
+noun：
+- nominative
+- genitive
+- gender
+- declension
+
+verb：
+- principal parts
+- conjugation
+
+adjective：
+- dictionary forms
+- adjective class / declension pattern
+
+共同：
+- lemma
+- meanings
+- notes
+- tags
+- part of speech
+
+不要在這一版做 automatic declension/conjugation generator。
+
+==================================================
+19. Vocabulary — German
+==================================================
+
+German 建立 language-specific metadata 架構。
+
+至少預留／支援：
+
+noun：
+- gender
+- plural
+
+verb：
+- infinitive
+- principal forms
+- separable prefix
+- case government / valency
+- reflexive status
+
+其他：
+- part of speech
+- meanings
+- notes
+- tags
+
+不要過度複雜化 UI，
+但資料結構要可擴充。
+
+==================================================
+20. Vocabulary — Russian
+==================================================
+
+Russian vocabulary metadata 至少要能擴充：
+
+- gender
+- aspect
+- imperfective/perfective pair
+- case government
+- part of speech
+- notes
+
+第一版不需要建立完整 morphology engine。
+
+==================================================
+21. Vocabulary — Japanese
+==================================================
+
+Japanese metadata 至少能支援：
+
+- kanji form
+- reading
+- part of speech
+- transitivity
+- meanings
+- notes
+
+第一版不需要自動 conjugation engine。
+
+==================================================
+22. Vocabulary — English
+==================================================
+
+English 可以使用較簡單的 shared model。
+
+但仍然必須使用同一 VocabularyEntry architecture，
+不要建立特殊完全獨立系統。
+
+==================================================
+23. Grammar module
+==================================================
+
+每個單語言 environment 都有：
+
+Grammar
+
+Grammar entry 不只是任意 plain note。
+
+至少支援結構：
+
+- title
+- topic
+- explanation / rule
+- examples
+- exceptions
+- tags
+- notes
+- language
+
+不同語言未來可以增加 language-specific metadata。
+
+這一版不需要建立完整 digital grammar textbook。
+
+==================================================
+24. Cross-language workspace
+==================================================
+
+建立：
+
+/languages/cross-language
+
+它是唯一可以：
+
+- 查看跨語言資料
+- 建立跨語言資料
+- 搜尋跨語言資料
+
+的地方。
+
+不要讓 Languages homepage 本身提供 cross-language search。
+
+==================================================
+25. Cross-language entry 類型
+==================================================
+
+Phase 1 支援：
+
+- Vocabulary
+- Sentence
+- Concept
+- Text
+
+暫時不要支援：
+
+Grammar comparison
+
+==================================================
+26. 建立 Cross-language entry 的流程
+==================================================
+
+建立新 comparison 時：
+
+第一步顯示六個 language selector cards / checkboxes：
+
+[ ] English
+[ ] German
+[ ] Russian
+[ ] Japanese
+[ ] Ancient Greek
+[ ] Latin
+
+使用者自己選擇要比較哪些語言。
+
+例如：
+
+[x] German
+[x] Ancient Greek
+
+就是 two-language comparison。
+
+也可以：
+
+[x] English
+[x] German
+[x] Russian
+[x] Japanese
+[x] Ancient Greek
+[x] Latin
+
+做六語比較。
+
+不要規定一定要六種。
+
+至少選兩種語言才能建立 cross-language comparison。
+
+==================================================
+27. Cross-language 必須 link existing entries
+==================================================
+
+非常重要：
+
+Cross-language entry 不應複製 vocabulary / sentence / text 的內容。
+
+使用：
+
+link existing entry
+
+例如：
+
+German vocabulary:
+Wissen
+
+Cross-language comparison 裡應儲存：
+
+German entry ID → Wissen
+
+而不是複製：
+
+{
+  germanWord: "Wissen"
+}
+
+如果尚無 entry：
+
+允許在 cross-language creation flow 中建立新 entry。
+
+建立完成後，
+新 entry 必須同時存在於對應語言自己的正式資料中。
+
+Cross-language 只是 reference / relation layer。
+
+這樣修改原 entry 後，
+Cross-language 自動看到最新內容。
+
+==================================================
+28. 單語言中 Cross-language link 的顯示
+==================================================
+
+如果某個：
+
+Vocabulary
+Sentence
+Text
+Concept
+
+已經被某個 Cross-language entry 引用，
+
+在單語言頁可以顯示：
+
+Cross-language comparison exists
+
+或相似 indicator。
+
+但是：
+
+不能點擊前往 Cross-language。
+
+因為單語言環境必須保持 context isolation。
+
+不要提供 hidden deep link。
+
+==================================================
+29. Search architecture
+==================================================
+
+建立清楚的 search boundary：
+
+German search
+→ German only
+
+Japanese search
+→ Japanese only
+
+Ancient Greek search
+→ Ancient Greek only
+
+Cross-language search
+→ Cross-language relationships / selected linked data
+
+不要建立：
+
+global search
+
+首頁也不要有 search。
+
+==================================================
+30. Philosophy
+==================================================
+
+目前 Philosophy 內部功能先保持。
+
+例如現有：
+
+concepts
+outputs
+questions
+texts
+
+不要進行內容 architecture redesign。
+
+只要：
+
+- 取消 global sidebar
+- 讓 `/philosophy` 成為獨立 environment
+- 保留內部 navigation
+- 保留功能
+- 保留資料
+- 不提供 Home / Languages / Fitness / Record UI navigation
+
+不要建立：
+
+Thinkers
+Works
+Reading Records
+
+這些留到後續版本。
+
+==================================================
+31. Fitness
+==================================================
+
+Fitness 目前內部完全先保留。
+
+不要修改：
+
+- 飲食六時段邏輯
+- weight chart
+- weight y-axis
+- dashboard structure
+- food data
+
+只做：
+
+- environment isolation
+- 移除 global sidebar
+- PWA entry preparation
+
+這一版不要把 weight Y axis 改成 55–65 kg。
+那是未來版本。
+
+==================================================
+32. Login / authentication
+==================================================
+
+所有 environments 共用同一登入 session。
+
+不能：
+
+Languages 登入一次
+Philosophy 又要登入一次。
+
+如果 session 過期：
+
+例如原本打開：
+
+/philosophy
+
+被 redirect：
+
+/login
+
+登入成功後要回：
+
+/philosophy
+
+同理：
+
+/languages/de/vocabulary
+
+登入後應回：
+
+/languages/de/vocabulary
+
+請保留 intended destination。
+
+不要一律登入後送 `/`。
+
+==================================================
+33. PWA 架構
+==================================================
+
+這一版需要準備五個主畫面入口：
+
+1. Learning Programme
+2. Languages
+3. Philosophy
+4. Fitness
+5. Record
+
+目標是 iPad / iPhone 加到主畫面後，
+可以感覺像五個不同入口。
+
+start URLs：
+
+Learning Programme
+→ /
+
+Languages
+→ /languages
+
+Philosophy
+→ /philosophy
+
+Fitness
+→ /fitness
+
+Record
+→ /record
+
+這五個：
+
+- 共用 authentication
+- 共用 database/data
+- 共用 codebase
+- 共用 backend
+
+但可以有各自：
+
+- app name
+- short name
+- start URL
+- icon
+- metadata
+
+請依照目前 Next.js/PWA architecture 採可行方式。
+
+不要為六個單語言各建立 PWA icon。
+
+只有：
+
+Main
+Languages
+Philosophy
+Fitness
+Record
+
+==================================================
+34. iPad-first responsive design
+==================================================
+
+主要裝置優先順序：
+
+1. iPad 橫向
+2. iPhone
+3. desktop
+
+UI 必須先確保 iPad landscape 使用舒服。
+
+Languages local navigation 不要用 desktop-only sidebar。
+
+優先：
+
+- horizontal navigation
+- tabs
+- toolbar
+- responsive grids
+
+iPhone 上必須：
+
+- 不水平溢出
+- touch targets 足夠
+- cards 可以 reflow
+- forms 可正常使用
+
+==================================================
+35. Visual-ready architecture
+==================================================
+
+這一版不要正式做視覺設計。
+
+我之後會自己提供圖片。
+
+但是：
+
+Phase 1 必須建立完整「可以直接放圖片」的框架，
+讓 Phase 2 只要把圖片放進指定資料夾，
+Codex 就能直接套用。
+
+不要讓 Phase 2 還要重構 layout。
+
+==================================================
+36. Visual asset directory
+==================================================
+
+請建立類似以下固定 asset structure：
+
+public/
+└── visuals/
+    ├── home/
+    │   ├── languages/
+    │   ├── philosophy/
+    │   ├── fitness/
+    │   └── record/
+    │
+    ├── languages/
+    │   ├── en/
+    │   ├── de/
+    │   ├── ru/
+    │   ├── ja/
+    │   ├── grc/
+    │   ├── la/
+    │   └── cross-language/
+    │
+    └── pwa/
+        ├── main/
+        ├── languages/
+        ├── philosophy/
+        ├── fitness/
+        └── record/
+
+如果 repo 現有 asset convention 有更合理的位置，
+可以調整，
+但必須保持同樣清楚且固定的 logical structure。
+
+==================================================
+37. 預定 visual filename
+==================================================
+
+可以預留約定：
+
+home：
+
+/visuals/home/languages/cover.webp
+/visuals/home/philosophy/cover.webp
+/visuals/home/fitness/cover.webp
+/visuals/home/record/cover.webp
+
+languages：
+
+/visuals/languages/en/cover.webp
+/visuals/languages/de/cover.webp
+/visuals/languages/ru/cover.webp
+/visuals/languages/ja/cover.webp
+/visuals/languages/grc/cover.webp
+/visuals/languages/la/cover.webp
+/visuals/languages/cross-language/cover.webp
+
+PWA：
+
+/visuals/pwa/main/icon-512.png
+/visuals/pwa/languages/icon-512.png
+/visuals/pwa/philosophy/icon-512.png
+/visuals/pwa/fitness/icon-512.png
+/visuals/pwa/record/icon-512.png
+
+可以同時預留 icon-192.png 等 manifest 需要尺寸。
+
+目前圖片可能不存在。
+
+缺圖不能造成 broken image。
+
+==================================================
+38. VisualEntry component
+==================================================
+
+建立 reusable visual entry architecture。
+
+例如：
+
+VisualEntryCard
+
+概念至少支援：
+
+- title
+- optional subtitle
+- href
+- image / visual
+- fallback placeholder
+- variant
+- aspect ratio
+- alt text
+
+現在不要真的做各區完整美術設計。
+
+沒有圖片時顯示：
+
+neutral placeholder
+
+例如：
+
+[ German visual ]
+
+不要自己：
+
+- 找 stock image
+- 做 AI image
+- 選 fancy gradient
+- 加大量 decoration
+- 做一套最終 color identity
+
+現在目標只是：
+
+layout ready for future image insertion。
+
+==================================================
+39. Visual variants
+==================================================
+
+底層 component 可以共用，
+但至少允許：
+
+variant="primary"
+variant="language"
+
+不要把：
+
+Home 四大入口
+
+與：
+
+六個 language entry
+
+綁死成完全相同設計。
+
+Phase 2 必須有空間做不同視覺設計。
+
+==================================================
+40. Visual config
+==================================================
+
+不要把 image paths 散落在每個 component。
+
+建立集中 config。
+
+例如概念：
+
+const environments = {
+  languages: {
+    title: "Languages",
+    visual: null
+  }
+}
+
+const languages = {
+  de: {
+    name: "German",
+    visual: null
+  }
+}
+
+Phase 1 可以使用：
+
+visual: null
+
+讓 UI 顯示 placeholder。
+
+Phase 2 圖片準備好後，
+只需要更新 config / asset path。
+
+==================================================
+41. Aspect ratio
+==================================================
+
+Visual slot 必須使用 reusable aspect-ratio based layout。
+
+不要為每個 card 寫死高度。
+
+先選一個合理、適合 iPad landscape 的統一比例，例如：
+
+16:10
+
+但請把 aspect ratio 抽象化，
+未來可以調整。
+
+圖片使用時應：
+
+- object-fit 合理
+- 不破壞 grid
+- responsive
+- 不 layout shift
+
+==================================================
+42. Cross-language visual
+==================================================
+
+Cross-language 也需要自己的 visual slot：
+
+/visuals/languages/cross-language/
+
+即使現在沒有圖片。
+
+它在 `/languages` 首頁應與六種語言分區顯示。
+
+==================================================
+43. PWA icon 與 cover 必須分開
+==================================================
+
+不要把：
+
+cover.webp
+
+直接當 PWA icon。
+
+PWA icon 與 page visual 是兩套 assets。
+
+例如：
+
+cover：
+/visuals/home/languages/cover.webp
+
+PWA：
+/visuals/pwa/languages/icon-512.png
+
+Phase 2 會分別提供。
+
+==================================================
+44. 舊 language routes
+==================================================
+
+目前可能存在：
+
+/languages/[language]
+/languages/de
+/languages/en
+/languages/ja
+/languages/ru
+
+請整理成一套一致 architecture。
+
+避免：
+
+一部分 dynamic route
+一部分 duplicate static route
+
+造成 duplicate implementation。
+
+優先建立：
+
+shared language layout
++
+language configuration
+
+不要為：
+
+en
+de
+ru
+ja
+grc
+la
+
+複製六份幾乎相同 component。
+
+==================================================
+45. Shared language architecture
+==================================================
+
+請建立 centralized language definition。
+
+概念例如：
+
+type LanguageCode =
+  | "en"
+  | "de"
+  | "ru"
+  | "ja"
+  | "grc"
+  | "la";
+
+每種語言 config 至少可以包含：
+
+- code
+- display name
+- route
+- visual
+- search normalization strategy
+- enabled modules
+- metadata schema
+
+不要到處 hardcode：
+
+if language === "de"
+
+只有 language-specific metadata / forms 才應該分支。
+
+==================================================
+46. 資料 migration
+==================================================
+
+這是 existing app。
+
+絕對不要用：
+
+「刪掉所有舊資料，重新開始」
+
+的方式實作。
+
+先辨識目前：
+
+Vocabulary
+Sentence
+Article
+Language comparison
+
+資料存在哪。
+
+然後寫安全 migration / compatibility layer。
+
+要求：
+
+- 不遺失既有資料
+- 已有 English / German / Russian / Japanese language information 要保留
+- 新增 Greek / Latin support
+- Article 可 migration 成 Text
+- 舊 relation 若存在要保留
+
+如果 migration 有風險：
+
+優先保留 backward-compatible reader，
+再逐步 migration。
+
+==================================================
+47. 不要因為新 schema 過度工程化
+==================================================
+
+不要為 Phase 1 引入不必要的新：
+
+- database
+- ORM
+- backend service
+- state management framework
+
+除非現有 architecture 已經明顯需要。
+
+盡量沿用 project 目前技術棧。
+
+==================================================
+48. Route redirects
+==================================================
+
+至少建立：
+
+/schedule
+→ /record/schedule
+
+/progress
+→ /record/progress
+
+/daily-log
+→ /record/daily-log
+
+/vocabulary
+→ /languages
+
+/sentences
+→ /languages
+
+/articles
+→ /languages
+
+/language-comparison
+→ /languages/cross-language
+
+如果舊 URL 有 query parameter 可以可靠判斷語言，
+可以做更精確 redirect，
+但不能因為猜測造成錯誤跳轉。
+
+==================================================
+49. Page titles
+==================================================
+
+可以使用：
+
+German | Learning Programme
+Ancient Greek | Learning Programme
+Philosophy | Learning Programme
+Fitness | Learning Programme
+
+不需要為了 isolation 把 Learning Programme 從 document title 完全移除。
+
+==================================================
+50. 禁止事項
+==================================================
+
+Phase 1 不要：
+
+1. 重新設計 Philosophy 內部資訊架構
+2. 新增 Thinkers / Works / Reading Records
+3. 修改 Fitness 功能
+4. 修改 weight chart Y axis
+5. 重做 Record 內部功能
+6. 加 global dashboard
+7. 加 global search
+8. 加 sidebar
+9. 自動生成正式入口圖片
+10. 自己挑 stock images
+11. 做完整 Greek morphology engine
+12. 做完整 Latin morphology engine
+13. 做 German/Russian/Japanese conjugation engine
+14. 做 cross-language grammar comparison
+15. 刪除舊使用者資料
+16. 另外建立六個語言 PWA
+17. 把 Cross-language 當第七種語言
+18. 在單語言區提供前往 Cross-language 的 clickable link
+19. 在 environment 裡重新加入 Home navigation
+20. 大量改寫與此 migration 無關的程式碼
+
+==================================================
+51. 實作順序
+==================================================
+
+請按照以下順序工作：
+
+Step 1
+Audit 現有 architecture / data / routing。
+
+Step 2
+建立 centralized environment / language configs。
+
+Step 3
+建立新的 root IA 與 layouts。
+
+Step 4
+移除 global sidebar dependency。
+
+Step 5
+建立 `/record` route hierarchy + redirects。
+
+Step 6
+建立 Languages shared architecture。
+
+Step 7
+建立六種語言 Overview + local navigation。
+
+Step 8
+把 Vocabulary / Sentences / Articles 改為 language-scoped architecture。
+
+Step 9
+Article → Text migration。
+
+Step 10
+建立 Vocabulary 2.0 extensible schema/forms。
+
+Step 11
+建立 Ancient Greek normalization。
+
+Step 12
+建立 Grammar module。
+
+Step 13
+建立 Cross-language relation model。
+
+Step 14
+建立 Cross-language create/search UI。
+
+Step 15
+建立 VisualEntry / placeholder / asset config。
+
+Step 16
+建立 PWA entry architecture。
+
+Step 17
+建立 legacy redirects。
+
+Step 18
+確認 login return destination。
+
+Step 19
+responsive check：
+
+- iPad landscape
+- iPhone
+- desktop
+
+Step 20
+run：
+
+- lint
+- type check
+- tests
+- production build
+
+修正所有 error。
+
+==================================================
+52. 測試重點
+==================================================
+
+至少確認：
+
+A.
+首頁只有：
+
+Languages
+Philosophy
+Fitness
+Record
+
+B.
+沒有 global sidebar。
+
+C.
+German environment 看不到 Japanese navigation。
+
+D.
+Philosophy 看不到 Languages / Fitness / Record navigation。
+
+E.
+German search 不會搜尋到 Greek。
+
+F.
+Greek 搜尋：
+
+ανθρωπος
+
+可以找到：
+
+ἄνθρωπος
+
+G.
+Cross-language 可以只選：
+
+German + Ancient Greek
+
+而不是強迫六語。
+
+H.
+Cross-language link existing entry，
+修改原 Vocabulary 後 relation 仍讀到最新資料。
+
+I.
+單語言 item 可以知道：
+
+Cross-language comparison exists
+
+但不能點去 Cross-language。
+
+J.
+舊：
+
+/schedule
+
+可以 redirect：
+
+/record/schedule
+
+K.
+舊：
+
+/articles
+
+不會 404。
+
+L.
+session 過期後從：
+
+/philosophy
+
+登入完成會回：
+
+/philosophy
+
+M.
+visual image 不存在時不會顯示 broken image。
+
+N.
+iPad landscape 沒有 layout overflow。
+
+O.
+iPhone 沒有 page-level horizontal overflow。
+
+P.
+production build 成功。
+
+==================================================
+53. 完成後回報
+==================================================
+
+完成實作後，請不要只回答「done」。
+
+請回報：
+
+1. 修改了哪些主要 routes
+2. 新增了哪些 shared components
+3. data model 如何 migration
+4. 舊資料如何保留
+5. Languages 新 architecture
+6. Cross-language relation model
+7. Greek normalization 如何實作
+8. visual asset folder 在哪裡
+9. Phase 2 我要把圖片放到哪些 exact paths
+10. PWA 架構如何處理
+11. legacy redirects 清單
+12. 尚未完成或需要我決定的事情
+13. lint / typecheck / tests / build 結果
+
+如果 repo 現況讓某個需求不能安全完成，
+不要偷偷略過。
+
+採取最安全的 implementation，
+並在最後明確說明原因與你採取的替代方案。
+
+==================================================
+54. 最重要的設計原則
+==================================================
+
+這次重構最重要的不是「做一個更漂亮的 dashboard」。
+
+而是：
+
+降低 context switching。
+
+因此：
+
+- fewer global links
+- no global sidebar
+- no global dashboard
+- no global search
+- environment isolation
+- language isolation
+- local navigation only
+- shared data underneath
+- deliberate cross-language workspace
+
+不要因為「方便」而重新加入大量跨區 navigation。
+
+Phase 1 的最終效果應該是：
+
+我打開 German，
+就感覺自己現在只在 German 網站裡。
+
+我打開 Philosophy，
+就感覺自己現在只在 Philosophy 網站裡。
+
+但所有資料仍然存在同一套 Learning Programme 系統中。

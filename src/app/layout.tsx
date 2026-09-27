@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "../components/layout/app-shell";
+import { PwaRegistration } from "@/components/pwa-registration";
+import { environmentMetadata } from "@/lib/pwa";
 
-export const metadata: Metadata = {
-  title: "ChunDuan's Learning Programme",
-  description: "A personal language learning workspace.",
-};
+export const metadata = environmentMetadata("main");
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };
 
 export default function RootLayout({
   children,
@@ -15,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <PwaRegistration />
         <AppShell>{children}</AppShell>
       </body>
     </html>

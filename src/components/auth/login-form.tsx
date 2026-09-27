@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase/client";
+import { safeDestination } from "@/lib/auth-destination";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -44,7 +45,7 @@ export function LoginForm() {
     setStatus("success");
     setMessage("Signed in successfully.");
 
-    router.push("/dashboard");
+    router.replace(safeDestination(new URLSearchParams(window.location.search).get("next")));
   }
 
   async function handleSignOut() {

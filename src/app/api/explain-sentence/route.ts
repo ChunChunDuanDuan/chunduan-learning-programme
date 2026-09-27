@@ -43,6 +43,10 @@ function hasLatin(text: string) {
     return /[A-Za-z]/.test(text);
 }
 
+function hasJapaneseScript(text: string) {
+    return /[\u3040-\u30ff\u3400-\u9fff]/.test(text);
+}
+
 function cleanExplanation(explanation: string) {
     return explanation
         .replace(/^English:\s*/gim, "")
@@ -50,6 +54,8 @@ function cleanExplanation(explanation: string) {
         .replace(/^German:\s*/gim, "")
         .replace(/^Русский:\s*/gim, "")
         .replace(/^Russian:\s*/gim, "")
+        .replace(/^日本語:\s*/gim, "")
+        .replace(/^Japanese:\s*/gim, "")
         .replace(/^英文:\s*/gim, "")
         .replace(/^德文:\s*/gim, "")
         .replace(/^俄文:\s*/gim, "")
@@ -73,6 +79,14 @@ function normaliseLanguage(language: string) {
         value === "ru"
     ) {
         return "Русский";
+    }
+
+    if (
+        value === "日本語" ||
+        value === "japanese" ||
+        value === "ja"
+    ) {
+        return "日本語";
     }
 
     return "English";
@@ -156,6 +170,51 @@ Example:
   "target_sentence": "Я хочу купить кофе.",
   "translation_zh": "我想買咖啡。",
   "explanation": "Я: 我\\nхочу: 想要\\nкупить: 買\\nкофе: 咖啡",
+  "notes": ""
+}
+`;
+    }
+
+    if (language === "日本語") {
+        return `
+${sharedJsonRule}
+
+You are generating a Japanese sentence for a beginner learner.
+
+Selected language: Japanese / 日本語.
+
+Chinese prompt:
+${sourceZh}
+
+Existing Japanese sentence, if any:
+${existingTargetSentence}
+
+Existing Chinese translation, if any:
+${existingTranslationZh}
+
+Task:
+Generate a natural Japanese sentence from the Chinese prompt.
+
+Absolute rules:
+- target_sentence MUST be Japanese using Japanese script.
+- translation_zh must be Traditional Chinese.
+- explanation must explain the JAPANESE target_sentence word by word in Traditional Chinese and include kana readings for kanji words.
+- explanation must NOT explain the Chinese prompt.
+- explanation must NOT contain labels like "日本語:" or "Japanese:".
+- notes must be an empty string: ""
+- Do not generate notes.
+
+${dailyLifeRule}
+
+Explanation format:
+Japanese word (reading): Traditional Chinese meaning
+Japanese word (reading): Traditional Chinese meaning
+
+Example:
+{
+  "target_sentence": "コーヒーを一杯買いたいです。",
+  "translation_zh": "我想買一杯咖啡。",
+  "explanation": "コーヒー: 咖啡\\n一杯（いっぱい）: 一杯\\n買いたい（かいたい）: 想買\\nです: 禮貌語尾",
   "notes": ""
 }
 `;
@@ -352,6 +411,19 @@ export async function POST(request: Request) {
                     {
                         error:
                             "The AI returned a non-Russian target sentence. Please try again.",
+                        raw: result,
+                    },
+                    { status: 500 }
+                );
+            }
+        }
+
+        if (language === "日本語") {
+            if (!hasJapaneseScript(result.target_sentence)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "The AI returned a non-Japanese target sentence. Please try again.",
                         raw: result,
                     },
                     { status: 500 }

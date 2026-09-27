@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { StudyScheduleBlock, StudyScheduleStatus } from "../types/schedule";
 import {
   getScheduleBlocks,
@@ -113,7 +113,7 @@ export default function StudySchedule() {
     no_new_section_after: "10:00",
   });
 
-  async function loadBlocks() {
+  const loadBlocks = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -122,11 +122,12 @@ export default function StudySchedule() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [date]);
 
   useEffect(() => {
-    loadBlocks();
-  }, [date]);
+    const timer = window.setTimeout(() => { void loadBlocks(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadBlocks]);
 
   function toggleExpand(blockId: string) {
     setExpandedBlockIds((current) =>
@@ -901,10 +902,11 @@ function Textarea({
   placeholder?: string;
 }) {
   const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => {
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
     setLocalValue(value);
-  }, [value]);
+  }
 
   return (
     <label className="block">

@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function RecordPage(){return <section><h1 className="mb-6 text-3xl font-semibold">Record</h1><div className="grid gap-4 sm:grid-cols-3">{[["schedule","Schedule"],["progress","Progress"],["daily-log","Daily Log"]].map(([route,title])=><Link key={route} className="rounded-xl border border-neutral-200 p-6 text-xl font-semibold hover:bg-neutral-50" href={`/record/${route}`}>{title}</Link>)}</div></section>;}

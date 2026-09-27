@@ -1,5 +1,2 @@
-import StudySchedule from "../../components/StudySchedule";
-
-export default function SchedulePage() {
-    return <StudySchedule />;
-}
+import {redirect} from "next/navigation";
+export default function LegacyPage(){redirect("/record/schedule");}

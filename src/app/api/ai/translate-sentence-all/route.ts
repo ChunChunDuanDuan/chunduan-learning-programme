@@ -9,6 +9,7 @@ type TranslateSentenceAllResult = {
     english: string;
     german: string;
     russian: string;
+    japanese: string;
     explanation: string;
     notes: string;
 };
@@ -40,7 +41,7 @@ export async function GET() {
         ok: true,
         source: ".env.local",
         route: "translate-sentence-all",
-        mode: "translate Chinese sentence into English, German, and Russian",
+        mode: "translate Chinese sentence into English, German, Russian, and Japanese",
         hasOpenAIKey: Boolean(apiKey),
         keyLength: apiKey?.length ?? 0,
         keyStart: apiKey ? apiKey.slice(0, 12) : null,
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
                 {
                     role: "system",
                     content: `
-You are a language-learning assistant for English, German, and Russian.
+You are a language-learning assistant for English, German, Russian, and Japanese.
 
 Return only valid JSON.
 Do not use markdown.
@@ -91,6 +92,7 @@ The JSON must have exactly this shape:
   "english": "string",
   "german": "string",
   "russian": "string",
+  "japanese": "string",
   "explanation": "string",
   "notes": "string"
 }
@@ -107,17 +109,20 @@ Translate this Chinese sentence into:
 1. English
 2. Deutsch
 3. Русский
+4. 日本語
 
 Language-level rules:
 - English should be natural. Use a C1-level sentence if appropriate, but keep simple prompts natural and not overcomplicated.
 - Deutsch should be suitable for A1 learners.
 - Русский should be suitable for beginners.
+- 日本語 should be natural and suitable for beginners.
 
 Explanation rules:
 - Do not generate explanation for English.
 - For Deutsch, explanation must contain only word-by-word meanings in English.
 - For Русский, explanation must contain only word-by-word meanings in Traditional Chinese.
-- Put Deutsch and Русский explanation in the same "explanation" field.
+- For 日本語, explanation must contain only word-by-word meanings and readings in Traditional Chinese.
+- Put Deutsch, Русский, and 日本語 explanation in the same "explanation" field.
 - Do not put grammar, sentence-level explanation, usage notes, nuance, or alternatives in explanation.
 - Put grammar, sentence-level explanation, usage notes, nuance, alternative expressions, and important reminders in notes.
 
@@ -131,6 +136,10 @@ German word: English meaning
 Russian word: Traditional Chinese meaning
 Russian word: Traditional Chinese meaning
 
+日本語:
+Japanese word (reading): Traditional Chinese meaning
+Japanese word (reading): Traditional Chinese meaning
+
 Notes rules:
 - notes must be in Traditional Chinese.
 - notes should briefly explain useful grammar, usage, nuance, or important reminders.
@@ -141,6 +150,7 @@ Example output:
   "english": "I'll think about it when the time comes.",
   "german": "Ich überlege es mir später.",
   "russian": "Я подумаю об этом позже.",
+  "japanese": "その時に考えます。",
   "explanation": "Deutsch:\\nIch: I\\nüberlege: think about / consider\\nes: it\\nmir: for myself\\nspäter: later\\n\\nРусский:\\nЯ: 我\\nподумаю: 會想一想／考慮\\nоб: 關於\\nэтом: 這件事\\nпозже: 晚一點／之後",
   "notes": "英文句子很自然，適合表示「到時候再看看」。德文的 mir 表示這個思考是自己心裡考慮。俄文 подумаю 是未完成體/完成體語感中偏向「我會想一下」的說法，適合初學者先記成固定表達。"
 }
@@ -164,6 +174,7 @@ Example output:
             typeof result.english !== "string" ||
             typeof result.german !== "string" ||
             typeof result.russian !== "string" ||
+            typeof result.japanese !== "string" ||
             typeof result.explanation !== "string" ||
             typeof result.notes !== "string"
         ) {

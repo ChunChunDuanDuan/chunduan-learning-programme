@@ -95,9 +95,10 @@ Rules:
 - If language is English, write at approximately C1 level unless the selected level says otherwise.
 - If language is Deutsch, write at approximately A1 level unless the selected level says otherwise.
 - If language is Русский, write at beginner level unless the selected level says otherwise.
+- If language is 日本語, write at beginner level unless the selected level says otherwise, using natural Japanese script.
 - The article should be short, readable, and useful for language learning.
 - English content should be around 120 to 220 words.
-- Deutsch or Русский beginner content should be shorter.
+- Deutsch, Русский, or 日本語 beginner content should be shorter.
 - translation_zh must be in Traditional Chinese.
 - notes must be in Traditional Chinese and include useful vocabulary, grammar, or reading notes.
 `,

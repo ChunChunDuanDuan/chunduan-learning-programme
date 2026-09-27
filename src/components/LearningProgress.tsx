@@ -35,7 +35,8 @@ export default function LearningProgress() {
     }
 
     useEffect(() => {
-        loadResults();
+        const timer = window.setTimeout(() => { void loadResults(); }, 0);
+        return () => window.clearTimeout(timer);
     }, []);
 
     const latestResult = results[0] || null;
