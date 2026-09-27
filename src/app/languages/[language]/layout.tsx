@@ -12,7 +12,7 @@ export default async function LanguageLayout({ children, params }: { children: R
   const { language } = await params;
   if (!isLanguageCode(language)) notFound();
   const config = languages[language];
-  return <LanguageBackground background={config.background} source={visualAsset(config.background.src)}><LanguageVisitTracker language={language}/><p className="mb-4 text-lg font-semibold">{config.name}</p><LocalNavigation className="language-navigation-surface" label={`${config.name} modules`} links={[
+  return <LanguageBackground background={config.background} source={visualAsset(config.background.src)}><LanguageVisitTracker language={language}/><p className="mb-4 text-lg font-semibold">{config.name}</p><LocalNavigation className="language-navigation-surface" label={`${config.name} navigation`} returnLink={{ label: "Languages Home", href: "/languages" }} links={[
     { label: "Overview", href: config.route },
     ...config.modules.map((module) => ({ label: module==="grammar-tables"?"Grammar Tables":module[0].toUpperCase() + module.slice(1), href: `${config.route}/${module}` })),
   ]} />{children}</LanguageBackground>;
