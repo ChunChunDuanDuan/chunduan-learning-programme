@@ -3,6 +3,7 @@ create extension if not exists "pgcrypto";
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -78,23 +79,19 @@ create index if not exists philosophy_questions_user_updated_idx
 create index if not exists philosophy_outputs_user_updated_idx
   on public.philosophy_outputs (user_id, updated_at desc);
 
-drop trigger if exists set_philosophy_concepts_updated_at on public.philosophy_concepts;
-create trigger set_philosophy_concepts_updated_at
+create or replace trigger set_philosophy_concepts_updated_at
 before update on public.philosophy_concepts
 for each row execute function public.set_updated_at();
 
-drop trigger if exists set_philosophy_text_maps_updated_at on public.philosophy_text_maps;
-create trigger set_philosophy_text_maps_updated_at
+create or replace trigger set_philosophy_text_maps_updated_at
 before update on public.philosophy_text_maps
 for each row execute function public.set_updated_at();
 
-drop trigger if exists set_philosophy_questions_updated_at on public.philosophy_questions;
-create trigger set_philosophy_questions_updated_at
+create or replace trigger set_philosophy_questions_updated_at
 before update on public.philosophy_questions
 for each row execute function public.set_updated_at();
 
-drop trigger if exists set_philosophy_outputs_updated_at on public.philosophy_outputs;
-create trigger set_philosophy_outputs_updated_at
+create or replace trigger set_philosophy_outputs_updated_at
 before update on public.philosophy_outputs
 for each row execute function public.set_updated_at();
 

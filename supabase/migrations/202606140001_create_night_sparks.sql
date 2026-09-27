@@ -13,8 +13,7 @@ create table if not exists public.night_sparks (
 create index if not exists night_sparks_user_created_idx
   on public.night_sparks (user_id, created_at desc);
 
-drop trigger if exists set_night_sparks_updated_at on public.night_sparks;
-create trigger set_night_sparks_updated_at
+create or replace trigger set_night_sparks_updated_at
 before update on public.night_sparks
 for each row execute function public.set_updated_at();
 

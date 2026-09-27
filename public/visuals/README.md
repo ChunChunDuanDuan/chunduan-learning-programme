@@ -23,6 +23,8 @@ Put the images at these repository-relative paths. Directory placeholders are co
 
 Covers use a 16:10 slot with `object-fit: cover`. `VisualEntryCard` accepts `aspectRatio`, `alt`, `subtitle`, and independent `primary` / `language` variants. Paths are centralized in `src/lib/environments.ts` and `src/lib/languages/config.ts`.
 
-Icons must be square PNGs, separate from covers. Each PWA directory optionally accepts `icon-192.png` and `icon-180.png`; otherwise the icon route scales its `icon-512.png`. When no icon exists, the route generates a neutral initial-based placeholder of the correct size. No language-specific PWA icons are created.
+Icons use PNG files, separate from covers. Square 512×512 artwork is preferred; the icon route fits rectangular artwork into a square PNG without stretching it. Each PWA directory optionally accepts `icon-192.png` and `icon-180.png`; otherwise the route scales its `icon-512.png`. It does not use `.webp` files. When no icon exists, the route generates a neutral initial-based placeholder of the correct size. No language-specific PWA icons are created.
+
+The manifest and icon URLs include a version derived from the PNG contents, so replacing an icon and rebuilding produces fresh URLs. Previously installed home-screen icons may still need to be removed and added again because the operating system controls their cache.
 
 Rebuild/redeploy after adding assets: static page rendering checks which files exist. There is no need to change routes or layout. Missing covers render neutral placeholders and image loading failures also fall back safely.

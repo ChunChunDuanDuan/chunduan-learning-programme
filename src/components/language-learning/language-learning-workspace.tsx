@@ -254,7 +254,7 @@ export function LanguageLearningWorkspace({ initialView }: { initialView: Worksp
 
       setNotice(
         isMissingLanguageTable
-          ? "日文學習資料表尚未建立。請先在 Supabase 套用 supabase/migrations/202607100001_create_japanese_learning_tables.sql，完成後重新整理此頁。"
+          ? "日文學習資料表尚未建立。請先在 Supabase 套用 supabase/migrations/20260710155951_create_japanese_learning_tables.sql，完成後重新整理此頁。"
           : `載入失敗：${firstError.message}`
       );
     }
